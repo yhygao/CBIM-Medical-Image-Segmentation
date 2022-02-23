@@ -1,0 +1,44 @@
+#DATA
+data_root: dataset/acdc_2d
+classes: 4
+modality: mri
+
+
+#MODEL
+arch: unet++
+in_chan: 1
+base_chan: 32
+
+
+#TRAIN
+epochs: 150
+training_size: [256, 256]    # training crop size
+start_epoch: 0
+
+seed: 0
+k_fold: 5
+
+optimizer: sgd
+base_lr: 0.05
+momentum: 0.9   # momentum of SGD optimizer
+weight_decay: 0.0001  # weight decay of SGD optimizer
+weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
+rlt: 1 # relation between CE and Dice loss
+
+scale: 0.3  # scale for data augmentation
+rotate: 180 # rotation angle for data augmentation
+translate: 0
+gaussian_noise_std: 0.02
+additive_brightness_std: 0.7
+gamma_range: [0.5, 1.6]
+
+
+#VALIDATION
+ema: True
+ema_alpha: 0.99
+val_frequency: 10
+
+
+
+#INFERENCE
+sliding_window: False

@@ -1,0 +1,55 @@
+#DATA
+data_root: dataset/acdc_3d
+classes: 4
+modality: MRI
+
+
+#MODEL
+arch: vtunet
+init_model: '/research/cbim/vast/yg397/github/UTNet/initmodel/swin_tiny_patch4_window7_224.pth'
+in_chan: 1
+patch_size: [1, 4, 4]
+
+#TRAIN
+epochs: 250
+training_size: [16, 128, 128] # training crop size
+start_epoch: 0
+aux_loss: False
+aux_weight: [1, 0.1, 0.1, 0.1]
+
+seed: 0
+k_fold: 5
+
+optimizer: adamw
+base_lr: 0.0005 #0.001
+betas: [0.9, 0.999]
+#momentum: 0.9   # momentum of SGD optimizer
+weight_decay: 0.05  # weight decay of SGD optimizer
+#weight: [0.08, 0.66, 0.82, 0.82, 1.64, 2.05, 0.57, 0.82, 0.82, 0.82, 1.64, 1.23, 2.47]  # weitght of each class in the loss function
+weight: [0.5, 1, 1, 1]
+rlt: 1 # relation between CE and Dice loss
+
+
+scale: [0.1, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
+rotate: [30, 0, 0] # rotation angle for data augmentation 
+translate: [0, 0, 0]
+gaussian_noise_std: 0.02
+additive_brightness_std: 0.7
+gamma_range: [0.5, 1.6]
+
+
+iter_per_epoch: 200
+
+
+
+
+#VALIDATION
+ema: True
+ema_alpha: 0.99
+val_frequency: 10
+
+
+
+#INFERENCE
+sliding_window: True
+window_size: [16, 128, 128]
