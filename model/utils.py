@@ -38,30 +38,12 @@ def get_model(args, pretrain=False):
             if pretrain:
                 raise ValueError('No pretrain model available')
             return ResNet_UTNet(args.in_chan, args.classes, block_list='')
-
         
-        elif args.model == 'utnet':
-            from .dim2 import UTNet
-            if pretrain:
-                raise ValueError('No pretrain model available')
-            return UTNet(args.in_chan, args.base_chan, args.classes, block_list=args.block_list, num_blocks=args.num_blocks, num_heads=args.num_heads, reduce_size=args.reduce_size)
-
-        elif args.model == 'utnet_encoder':
-            from .dim2 import UTNet_Encoderonly
-            if pretrain:
-                raise ValueError('No pretrain model available')
-            return UTNet_Encoderonly(args.in_chan, args.base_chan, args.classes, block_list=args.block_list, num_blocks=args.num_blocks, num_heads=args.num_heads, reduce_size=args.reduce_size)
-
-        elif args.model in ['utnetv2', 'utnetv2_S', 'utnetv2_B']:
+        elif args.model in ['utnetv2']:
             from .dim2 import UTNetV2
             if pretrain:
                 raise ValueError('No pretrain model available')
-            return UTNetV2(args.in_chan, args.base_chan, args.classes, conv_block=args.conv_block, trans_block=args.trans_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, reduce_size=args.reduce_size, proj_type=args.proj_type, act=nn.GELU)
-        elif args.model in ['utnetv3']:
-            from .dim2 import UTNetV3
-            if pretrain:
-                raise ValueError('No pretrain model available')
-            return UTNetV3(args.in_chan, args.base_chan, args.classes, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.GELU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, rel_pos=args.rel_pos, se=args.se, aux_loss=args.aux_loss)
+            return UTNetV2(args.in_chan, args.base_chan, args.classes, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.GELU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop)
 
 
         elif args.model == 'transunet':
