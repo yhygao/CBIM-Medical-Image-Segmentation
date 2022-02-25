@@ -266,9 +266,10 @@ class down_block(nn.Module):
     def __init__(self, in_ch, out_ch, conv_num, trans_num, conv_block=BasicBlock, 
                 heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0., map_size=8, 
                 proj_type='depthwise', norm=nn.BatchNorm2d, act=nn.GELU, map_generate=False,
-                map_proj=True, map_dim=512):
+                map_proj=True, map_dim=None):
         super().__init__()
 
+        map_dim = out_ch if map_dim is None else map_dim
         self.map_generate = map_generate
         if map_generate:
             self.map_gen = SemanticMapGeneration(out_ch, map_dim, map_size)
@@ -277,7 +278,6 @@ class down_block(nn.Module):
         self.patch_merging = PatchMerging(in_ch, out_ch, proj_type=proj_type, norm=norm, map_proj=map_proj)
         
         block_list = []
-        
         for i in range(conv_num):
             block_list.append(conv_block(out_ch, out_ch, norm=norm, act=act))
             dim1 = out_ch
@@ -312,8 +312,7 @@ class up_block(nn.Module):
         self.norm = norm(in_ch+out_ch)
 
         self.map_shortcut = map_shortcut
-        if map_dim is None:
-            map_dim = out_ch
+        map_dim = out_ch if map_dim is None else map_dim
         if map_shortcut:
             self.map_reduction = nn.Conv2d(in_ch+out_ch, map_dim, kernel_size=1, bias=False)
         else:

@@ -20,8 +20,8 @@ trans_num: [0,1,2,2, 2,1,0,0]
 num_heads: [1,4,4,4, 4,4,1,1]
 expansion: 1
 fusion_depth: 2
-fusion_dim: 256
-fusion_heads: 4
+fusion_dim: 512 #256
+fusion_heads: 16
 attn_drop: 0.
 proj_drop: 0.
 proj_type: 'depthwise'
