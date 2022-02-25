@@ -60,6 +60,10 @@ python train.py --model utnetv2 --dimension 3d --dataset acdc --batch_size 3 --u
 
 The training process will be logged by tensorboard, including training loss, testing performance, and etc. You can find it in the `log/unique_name` folder and use it to monitor the training process. After the training is done, the result of cross-validation will be stored in the `exp/exp_unique_name` folder.
 
+
+### To Do
+We'll continously maintain this repo to add more SOTA models, and add more dataset support. Hope this repo can serves as a solid baseline for the future medical imaging model design.
+
 ### Citation
 If you find this repo helps, please kindly cite our paper, thanks!
 ```
