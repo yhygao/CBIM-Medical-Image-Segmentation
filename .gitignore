@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *_bkp.py
+flops.py
 checkpoint/
 log*/
 exp/
