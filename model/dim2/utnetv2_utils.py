@@ -247,11 +247,11 @@ class SemanticMapFusion(nn.Module):
 
 
 class inconv(nn.Module):
-    def __init__(self, in_ch, out_ch, block=BasicBlock, act=nn.GELU):
+    def __init__(self, in_ch, out_ch, block=BasicBlock, norm=nn.BatchNorm2d, act=nn.GELU):
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False)
 
-        self.conv2 = block(out_ch, out_ch, act=act)
+        self.conv2 = block(out_ch, out_ch, norm=norm, act=act)
 
     def forward(self, x): 
         out = self.conv1(x)

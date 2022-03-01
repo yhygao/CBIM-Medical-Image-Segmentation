@@ -41,11 +41,9 @@ class up_block(nn.Module):
     def __init__(self, in_ch, out_ch, num_block, block=BasicBlock):
         super().__init__()
 
-        self.conv_ch = nn.Conv2d(in_ch+out_ch, out_ch, kernel_size=1)
-        self.norm = nn.BatchNorm2d(in_ch+out_ch)
         
         block_list = []
-        block_list.append(block(out_ch, out_ch))
+        block_list.append(block(in_ch+out_ch, out_ch))
 
 
         for i in range(num_block-1):
@@ -56,7 +54,6 @@ class up_block(nn.Module):
     def forward(self, x1, x2):
         x1 = F.interpolate(x1, scale_factor=2, mode='bilinear', align_corners=True)
         out = torch.cat([x2, x1], dim=1)
-        out = self.conv_ch(self.norm(out))
         out = self.conv(out)
 
         return out

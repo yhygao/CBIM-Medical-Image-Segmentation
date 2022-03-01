@@ -33,12 +33,6 @@ def get_model(args, pretrain=False):
                 raise ValueError('No pretrain model available')
             return DAUNet(args.in_chan, args.classes, args.base_chan, block=args.block)
 
-        elif args.model == 'resnet_unet':
-            from .dim2 import ResNet_UTNet
-            if pretrain:
-                raise ValueError('No pretrain model available')
-            return ResNet_UTNet(args.in_chan, args.classes, block_list='')
-        
         elif args.model in ['utnetv2']:
             from .dim2 import UTNetV2
             if pretrain:

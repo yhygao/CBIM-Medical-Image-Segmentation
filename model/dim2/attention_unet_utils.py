@@ -37,7 +37,6 @@ class attention_up_block(nn.Module):
     def __init__(self, in_ch, out_ch, num_block, block=BasicBlock, norm=nn.BatchNorm2d):
         super().__init__()
         
-        self.conv_ch = nn.Conv2d(in_ch, out_ch, kernel_size=1)
         self.attn = AttentionBlock(in_ch, out_ch, out_ch//2)
 
         block_list = []
@@ -54,6 +53,7 @@ class attention_up_block(nn.Module):
         x2 = self.attn(x1, x2)
 
         out = torch.cat([x2, x1], dim=1)
+
         out = self.conv(out)
 
         return out

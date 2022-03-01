@@ -56,12 +56,11 @@ class up_block(nn.Module):
 
         self.up_scale = up_scale
 
-        self.conv_ch = nn.Conv3d(in_ch+out_ch, out_ch, kernel_size=1, padding=0, bias=False)
-        self.norm = norm(in_ch+out_ch)
 
         block_list = []
 
-        for i in range(num_block):
+        block_list.append(block(in_ch+out_ch, out_ch, kernel_size=kernel_size, norm=norm))
+        for i in range(num_block-1):
             block_list.append(block(out_ch, out_ch, kernel_size=kernel_size, norm=norm))
 
         self.conv = nn.Sequential(*block_list)
@@ -70,7 +69,6 @@ class up_block(nn.Module):
         x1 = F.interpolate(x1, size=x2.shape[2:], mode='trilinear', align_corners=True)
 
         out = torch.cat([x2, x1], dim=1)
-        out = self.conv_ch(self.norm(out))
 
         out = self.conv(out)
 

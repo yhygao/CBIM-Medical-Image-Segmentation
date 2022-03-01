@@ -160,7 +160,7 @@ def get_parser():
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./checkpoint/', help='checkpoint path')
-    parser.add_argument('--log_path', type=str, default='./log', help='log path')
+    parser.add_argument('--log_path', type=str, default='./log/', help='log path')
     parser.add_argument('--unique_name', type=str, default='test', help='unique experiment name')
     
     parser.add_argument('--gpu', type=str, default='0')
@@ -203,7 +203,7 @@ if __name__ == '__main__':
     
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    args.log_path = args.log_path + '_%s/'%args.dataset
+    args.log_path = args.log_path + '%s/'%args.dataset
    
     Dice_list = []
     HD_list = []
