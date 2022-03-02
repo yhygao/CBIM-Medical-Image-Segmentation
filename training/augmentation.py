@@ -114,31 +114,31 @@ def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale, rotate, tran
     scale_z = 1 - scale[0] + np.random.random() * 2*scale[0]
     scale_x = 1 - scale[1] + np.random.random() * 2*scale[1]
     scale_y = 1 - scale[2] + np.random.random() * 2*scale[2]
-    shear_zx = 0 if noshear else np.random.random() * 2*scale[0] - scale[0]
-    shear_zy = 0 if noshear else np.random.random() * 2*scale[0] - scale[0]
-    shear_xz = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
-    shear_xy = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
-    shear_yz = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
-    shear_yx = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
+    shear_xz = 0 if noshear else np.random.random() * 2*scale[0] - scale[0]
+    shear_yz = 0 if noshear else np.random.random() * 2*scale[0] - scale[0]
+    shear_zx = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
+    shear_yx = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
+    shear_zy = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
+    shear_xy = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
     translate_z = np.random.random() * 2*translate[0] - translate[0]
     translate_x = np.random.random() * 2*translate[1] - translate[1]
     translate_y = np.random.random() * 2*translate[2] - translate[2]
 
-    theta_scale = torch.tensor([[scale_z, shear_zx, shear_zy, translate_z],
-                                [shear_xz, scale_x, shear_xy, translate_x],
-                                [shear_yz, shear_yx, scale_y, translate_y], 
-                                [0, 0, 0, 1]]).float()
 
+    theta_scale = torch.tensor([[scale_y, shear_xy, shear_zy, translate_y],
+                                [shear_yx, scale_x, shear_zx, translate_x],
+                                [shear_yz, shear_xz, scale_z, translate_z], 
+                                [0, 0, 0, 1]]).float()
     angle_xy = (float(np.random.randint(-rotate[0], max(rotate[0], 1))) / 180.) * math.pi
     angle_xz = (float(np.random.randint(-rotate[1], max(rotate[1], 1))) / 180.) * math.pi
     angle_yz = (float(np.random.randint(-rotate[2], max(rotate[2], 1))) / 180.) * math.pi
     
-    theta_rotate_xy = torch.tensor([[1, 0, 0, 0],
-                                    [0, math.cos(angle_xy), -math.sin(angle_xy), 0],
-                                    [0, math.sin(angle_xy), math.cos(angle_xy), 0],
+    theta_rotate_xz = torch.tensor([[1, 0, 0, 0],
+                                    [0, math.cos(angle_xz), -math.sin(angle_xz), 0],
+                                    [0, math.sin(angle_xz), math.cos(angle_xz), 0],
                                     [0, 0, 0, 1]]).float()
-    theta_rotate_xz = torch.tensor([[math.cos(angle_xz), -math.sin(angle_xz), 0, 0],
-                                    [math.sin(angle_xz), math.cos(angle_xz), 0, 0],
+    theta_rotate_xy = torch.tensor([[math.cos(angle_xy), -math.sin(angle_xy), 0, 0],
+                                    [math.sin(angle_xy), math.cos(angle_xy), 0, 0],
                                     [0, 0, 1, 0],
                                     [0, 0, 0, 1]]).float()
     theta_rotate_yz = torch.tensor([[math.cos(angle_yz), 0, -math.sin(angle_yz), 0],
@@ -150,7 +150,6 @@ def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale, rotate, tran
     theta = torch.mm(theta, theta_rotate_yz)
     theta = torch.mm(theta, theta_scale)[0:3, :].unsqueeze(0)
     
-
     grid = F.affine_grid(theta, tensor_img.size(), align_corners=True)
     tensor_img = F.grid_sample(tensor_img, grid, mode='bilinear', padding_mode='zeros', align_corners=True)
     tensor_lab = F.grid_sample(tensor_lab.float(), grid, mode='nearest', padding_mode='zeros', align_corners=True).long()
