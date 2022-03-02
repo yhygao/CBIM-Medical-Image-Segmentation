@@ -6,7 +6,6 @@ checkpoint/
 log*/
 exp/
 initmodel/
-dataset/
 result/
 *.swp
 
