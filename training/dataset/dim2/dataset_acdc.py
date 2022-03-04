@@ -103,6 +103,10 @@ class CMRDataset(Dataset):
             lab = np.pad(lab, ((0,0), (diff, diff), (0,0)))
 
         img = img / max98
+
+        img = img.astype(np.float32)
+        lab = lab.astype(np.uint8)
+
         tensor_img = torch.from_numpy(img).float()
         tensor_lab = torch.from_numpy(lab).long()
 
