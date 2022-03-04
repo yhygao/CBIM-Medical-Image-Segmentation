@@ -11,7 +11,7 @@ norm: in
 init_model: /research/cbim/vast/yg397/ConvFormer/ConvFormer/initmodel/UNETR_model_best_acc.pth
 
 #TRAIN
-epochs: 150
+epochs: 400
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
 

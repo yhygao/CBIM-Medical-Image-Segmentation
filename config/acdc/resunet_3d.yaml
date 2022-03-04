@@ -24,7 +24,7 @@ k_fold: 5
 optimizer: adamw
 base_lr: 0.001
 betas: [0.9, 0.999]
-weight_decay: 0.05  # weight decay of SGD optimizer
+weight_decay: 0.05
 weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 

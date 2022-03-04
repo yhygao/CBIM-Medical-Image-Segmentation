@@ -21,10 +21,10 @@ start_epoch: 0
 seed: 0
 k_fold: 5
 
-optimizer: sgd
-base_lr: 0.05
-momentum: 0.9   # momentum of SGD optimizer
-weight_decay: 0.0001  # weight decay of SGD optimizer
+optimizer: adamw
+base_lr: 0.001
+betas: [0.9, 0.999]
+weight_decay: 0.05  # weight decay of SGD optimizer
 weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 
@@ -36,7 +36,7 @@ additive_brightness_std: 0.7
 gamma_range: [0.5, 1.6]
 
 
-iter_per_epoch: 250
+iter_per_epoch: 200
 
 
 #VALIDATION
