@@ -66,6 +66,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         for i, (img, label) in enumerate(trainLoader, 0):
             
             '''
+            # uncomment this for visualize the input images and labels for debug
             for idx in range(img.shape[0]):
                 plt.subplot(1,2,1)
                 plt.imshow(img[idx, 0, 40, :, :].numpy())
@@ -79,7 +80,6 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
             net.train()
             
-            training_tic = time.time()
             optimizer.zero_grad()
             
             
@@ -102,9 +102,8 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
             epoch_loss += loss.item()
             batch_time = time.time() - tic
-            training_time = time.time() - training_tic
             tic = time.time()
-            print('%d batch loss: %.5f, batch_time:%.5f, training_time: %.5f'%(i, loss.item(), batch_time, training_time))
+            print('%d batch loss: %.5f, batch_time:%.5f'%(i, loss.item(), batch_time))
             
             if args.dimension == '3d':
                 iter_num_per_epoch += 1
@@ -210,13 +209,9 @@ if __name__ == '__main__':
     ASD_list = []
 
     for i in range(args.k_fold):
-    #for i in range(4, 5):
         net, ema_net = init_network(args)
 
         print(net)
-        
-        param_num = sum(p.numel() for p in net.parameters() if p.requires_grad)
-        print(param_num)
         
         net.cuda()
         if args.ema:
