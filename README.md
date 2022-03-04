@@ -79,4 +79,11 @@ If you find this repo helps, please kindly cite our paper, thanks!
   year={2021},
   organization={Springer}
 }
+
+@article{gao2022multi,
+  title={A Multi-scale Transformer for Medical Image Segmentation: Architectures, Model Efficiency, and Benchmarks},
+  author={Gao, Yunhe and Zhou, Mu and Liu, Di and Metaxas, Dimitris},
+  journal={arXiv preprint arXiv:2203.00131},
+  year={2022}
+}
 ```
