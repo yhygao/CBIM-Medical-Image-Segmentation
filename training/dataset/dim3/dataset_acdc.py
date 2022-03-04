@@ -107,6 +107,10 @@ class CMRDataset(Dataset):
 
             return img, lab
         img, lab = remove_background(img, lab, size=256)
+        
+        
+        img = img.astype(np.float32)
+        lab = lab.astype(np.uint8)
 
         tensor_img = torch.from_numpy(img).float()
         tensor_lab = torch.from_numpy(lab).long()
