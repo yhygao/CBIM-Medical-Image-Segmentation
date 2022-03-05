@@ -20,9 +20,8 @@ seed: 0     # random seed for suffule before setting cross validation fold
 k_fold: 5   # number of folds in cross validation
 
 optimizer: adamw
-base_lr: 0.001
+base_lr: 0.0005
 betas: [0.9, 0.999]
-#momentum: 0.9   # momentum of SGD optimizer
 weight_decay: 0.05  # weight decay of SGD optimizer
 weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
