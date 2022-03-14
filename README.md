@@ -66,6 +66,8 @@ Add multi-GPU parallelism support.
 
 We'll continously maintain this repo to add more SOTA models, and add more dataset support. 
 
+Performance comparison results of the supported models and dataset
+
 Hope this repo can serves as a solid baseline for the future medical imaging model design.
 
 ### Citation
