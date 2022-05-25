@@ -1,6 +1,6 @@
 import numpy as np
 import SimpleITK as sitk
-from utils import ResampleXYZAxis, ResampleFullImageToRef
+from utils import ResampleXYZAxis, ResampleLabelToRef
 import os
 import random
 import yaml
@@ -22,28 +22,11 @@ def ResampleCMRImage(imImage, imLabel, save_path, patient_name, count, target_sp
     if not os.path.exists('%s'%(save_path)):
         os.mkdir('%s'%(save_path))
     
-    tmp_img = npimg
-    tmp_lab = nplab
-
-    tmp_itkimg = sitk.GetImageFromArray(tmp_img)
-    tmp_itkimg.SetSpacing(spacing[0:3])
-    tmp_itkimg.SetOrigin(origin[0:3])
-    tmp_itkimg.SetDirection((1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
-
-    tmp_itklab = sitk.GetImageFromArray(tmp_lab)
-    tmp_itklab.SetSpacing(spacing[0:3])
-    tmp_itklab.SetOrigin(origin[0:3])
-    tmp_itklab.SetDirection((1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
-
-
-    #re_img = ResampleXYZAxis(tmp_itkimg, space=(target_space[0], target_space[1], target_space[2]))
-    #re_lab = ResampleFullImageToRef(tmp_itklab, re_img)
-    # interp xy plane using Bilinear, while interp z axis using NearestNeighbor. Follow nnUNet
-    re_img_xy = ResampleXYZAxis(tmp_itkimg, space=(target_spacing[0], target_spacing[1], spacing[2]), interp=sitk.sitkBSpline)
-    re_lab_xy = ResampleFullImageToRef(tmp_itklab, re_img_xy)
+    re_img_xy = ResampleXYZAxis(imImage, space=(target_spacing[0], target_spacing[1], spacing[2]), interp=sitk.sitkBSpline)
+    re_lab_xy = ResampleLabelToRef(imLabel, re_img_xy, interp=sitk.sitkNearestNeighbor)
 
     re_img_xyz = ResampleXYZAxis(re_img_xy, space=(target_spacing[0], target_spacing[1], target_spacing[2]), interp=sitk.sitkNearestNeighbor)
-    re_lab_xyz = ResampleFullImageToRef(re_lab_xy, re_img_xyz)
+    re_lab_xyz = ResampleLabelToRef(re_lab_xy, re_img_xyz, interp=sitk.sitkNearestNeighbor)
 
 
     sitk.WriteImage(re_img_xyz, '%s/%s_%d.nii.gz'%(save_path, patient_name, count))
@@ -55,29 +38,12 @@ if __name__ == '__main__':
 
 
     src_path = '/research/cbim/medical/medical-share/public/ACDC/raw/training/'
-    tgt_path = '/research/cbim/medical/yg397/ACDC_3d/'
+    tgt_path = '/research/cbim/medical/yg397/tgt_dir/'
 
 
 
-    # This is to align train/val/test split with TransUNet SwinUNet and etc.
 
     patient_list = list(range(1, 101))
-
-    #val_list = [89, 90, 91, 93, 94, 96, 97, 98, 99, 100]
-    #test_list = [2, 3, 8, 9, 12, 14, 17, 24, 42, 48, 49, 53, 55, 64, 67, 79, 81, 88, 92, 95]
-    #train_list = list(set(patient_list) - set(val_list) - set(test_list))
-
-    # If don't want to align with them, just use following code to random split
-    '''
-    patient_list = list(range(1, 101))
-    random.seed(0)
-    random.shuffle(patient_list)
-
-    train_list = patient_list[:70]
-    val_list = patient_list[70:80]
-    test_list = patient_list[80:]
-    '''
-
 
     name_list = []
 
@@ -85,9 +51,8 @@ if __name__ == '__main__':
         name_list.append('patient%.3d'%idx)
 
 
-
-
-    os.mkdir('%slist'%(tgt_path))
+    if not os.path.exists(tgt_path+'list'):
+        os.mkdir('%slist'%(tgt_path))
     with open("%slist/dataset.yaml"%tgt_path, "w",encoding="utf-8") as f:
         yaml.dump(name_list, f)
 

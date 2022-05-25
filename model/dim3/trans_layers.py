@@ -9,7 +9,7 @@ __all__ = [
     'Mlp',
     'Attention',
     'TransformerBlock',
-    'LayerNorm,'
+    'LayerNorm',
 ]
 
 

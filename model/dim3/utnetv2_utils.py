@@ -113,7 +113,7 @@ class PatchMerging(nn.Module):
     """
     Modified patch merging layer that works as down-sampling
     """
-    def __init__(self, dim, out_dim, norm=nn.BatchNorm3d, proj_type='linear', down_scale=[2,2,2], kernel_size=[3,3,3], map_proj=True):
+    def __init__(self, dim, out_dim, norm=nn.BatchNorm3d, proj_type='linear', down_scale=[2,2,2], kernel_size=[3,3,3]):
         super().__init__()
         self.dim = dim
         assert proj_type in ['linear', 'depthwise']
@@ -129,10 +129,7 @@ class PatchMerging(nn.Module):
 
         self.norm = norm(merged_dim)
 
-        if map_proj:
-            self.map_projection = nn.Conv3d(dim, out_dim, kernel_size=1, bias=False)
-
-    def forward(self, x, semantic_map=None):
+    def forward(self, x):
         """
         x: B, C, D, H, W
         """
@@ -147,10 +144,7 @@ class PatchMerging(nn.Module):
         x = self.norm(x)
         x = self.reduction(x)
 
-        if semantic_map is not None:
-            semantic_map = self.map_projection(semantic_map)
-
-        return x, semantic_map
+        return x
 
 class BasicLayer(nn.Module):
     """
@@ -259,7 +253,7 @@ class down_block(nn.Module):
     def __init__(self, in_ch, out_ch, conv_num, trans_num, down_scale=[2,2,2], kernel_size=[3,3,3],
                 conv_block=BasicBlock, heads=4, dim_head=64, expansion=1, attn_drop=0., 
                 proj_drop=0., map_size=[8,8,8], proj_type='depthwise', norm=nn.BatchNorm3d, 
-                act=nn.GELU, map_generate=False, map_proj=True, map_dim=None):
+                act=nn.GELU, map_generate=False, map_dim=None):
         super().__init__()
         
 
@@ -268,7 +262,7 @@ class down_block(nn.Module):
         if map_generate:
             self.map_gen = SemanticMapGeneration(out_ch, map_dim, map_size)
 
-        self.patch_merging = PatchMerging(in_ch, out_ch, norm=norm, proj_type=proj_type, down_scale=down_scale, kernel_size=kernel_size, map_proj=map_proj)
+        self.patch_merging = PatchMerging(in_ch, out_ch, norm=norm, proj_type=proj_type, down_scale=down_scale, kernel_size=kernel_size)
 
         block_list = []
         for i in range(conv_num):
@@ -279,13 +273,15 @@ class down_block(nn.Module):
                 dim_head=dim_head, norm=norm, act=act, expansion=expansion, attn_drop=attn_drop, \
                 proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, kernel_size=kernel_size)
 
-    def forward(self, x, semantic_map=None):
-        x, semantic_map = self.patch_merging(x, semantic_map)
+    def forward(self, x):
+        x = self.patch_merging(x)
 
         out = self.conv_blocks(x)
 
         if self.map_generate:
             semantic_map = self.map_gen(out)
+        else:
+            semantic_map = None
 
         out, semantic_map = self.trans_blocks(out, semantic_map)
             
@@ -299,8 +295,6 @@ class up_block(nn.Module):
                 map_dim=None, map_shortcut=False):
         super().__init__()
 
-        self.reduction = nn.Conv3d(in_ch+out_ch, out_ch, kernel_size=1, padding=0, bias=False)
-        self.norm = norm(in_ch+out_ch)
 
         self.map_shortcut = map_shortcut
         map_dim = out_ch if map_dim is None else map_dim
@@ -309,15 +303,21 @@ class up_block(nn.Module):
         else:
             self.map_reduction = nn.Conv3d(in_ch, map_dim, kernel_size=1, bias=False)
 
-        self.trans_blocks = BasicLayer(out_ch, map_dim, out_ch, num_blocks=trans_num, heads=heads,\
-                    dim_head=dim_head, norm=norm, act=act, expansion=expansion, attn_drop=attn_drop,\
-                    proj_drop=proj_drop, map_size=map_size, proj_type=proj_type,\
-                    kernel_size=kernel_size)
+        self.trans_blocks = BasicLayer(in_ch+out_ch, map_dim, out_ch, num_blocks=trans_num, \
 
+                    heads=heads, dim_head=dim_head, norm=norm, act=act, expansion=expansion, \
+                    attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size,\
+                    proj_type=proj_type, kernel_size=kernel_size)
+
+        if trans_num == 0:
+            dim1 = in_ch+out_ch
+        else:
+            dim1 = out_ch
 
         conv_list = []
         for i in range(conv_num):
-            conv_list.append(conv_block(out_ch, out_ch, kernel_size=kernel_size, norm=norm, act=act))
+            conv_list.append(conv_block(dim1, out_ch, kernel_size=kernel_size, norm=norm, act=act))
+            dim1 = out_ch
         self.conv_blocks = nn.Sequential(*conv_list)
 
     def forward(self, x1, x2, map1, map2=None):
@@ -327,7 +327,6 @@ class up_block(nn.Module):
         
         x1 = F.interpolate(x1, size=x2.shape[-3:], mode='trilinear', align_corners=True)
         feat = torch.cat([x1, x2], dim=1)
-        out = self.reduction(self.norm(feat))
         
         if self.map_shortcut and map2 is not None:
             semantic_map = torch.cat([map1, map2], dim=1)
@@ -337,7 +336,7 @@ class up_block(nn.Module):
         if semantic_map is not None:
             semantic_map = self.map_reduction(semantic_map)
 
-        out, semantic_map = self.trans_blocks(out, semantic_map)
+        out, semantic_map = self.trans_blocks(feat, semantic_map)
         out = self.conv_blocks(out)
 
         return out, semantic_map

@@ -111,7 +111,7 @@ class PatchMerging(nn.Module):
     Modified patch merging layer that works as down-sampling
     """
 
-    def __init__(self, dim, out_dim, norm=nn.BatchNorm2d, proj_type='depthwise', map_proj=True):
+    def __init__(self, dim, out_dim, norm=nn.BatchNorm2d, proj_type='depthwise'):
         super().__init__()
         self.dim = dim
         if proj_type == 'linear':
@@ -120,9 +120,6 @@ class PatchMerging(nn.Module):
             self.reduction = DepthwiseSeparableConv(4*dim, out_dim)
 
         self.norm = norm(4*dim)
-
-        if map_proj:
-            self.map_projection = nn.Conv2d(dim, out_dim, kernel_size=1, bias=False)
 
     def forward(self, x, semantic_map=None):
         """
@@ -138,10 +135,7 @@ class PatchMerging(nn.Module):
         x = self.norm(x)
         x = self.reduction(x)
 
-        if semantic_map is not None:
-            semantic_map = self.map_projection(semantic_map)
-
-        return x, semantic_map
+        return x
 
 class BasicLayer(nn.Module):
     """
@@ -198,48 +192,46 @@ class SemanticMapFusion(nn.Module):
     def __init__(self, in_dim_list, dim, heads, depth=1, norm=nn.BatchNorm2d):
         super().__init__()
 
+        self.depth = depth
+        if depth == 0:
+            pass
+        else:
+            self.dim = dim
 
-        self.dim = dim
+            # project all maps to the same channel num
+            self.in_proj = nn.ModuleList([])
+            for i in range(len(in_dim_list)):
+                self.in_proj.append(nn.Conv2d(in_dim_list[i], dim, kernel_size=1, bias=False))
 
-        # project all maps to the same channel num
-        self.in_proj = nn.ModuleList([])
-        for i in range(len(in_dim_list)):
-            self.in_proj.append(nn.Conv2d(in_dim_list[i], dim, kernel_size=1, bias=False))
-
-        self.fusion = TransformerBlock(dim, depth, heads, dim//heads, dim, attn_drop=0., proj_drop=0.)
-        
-        # project all maps back to their origin channel num
-        self.out_proj = nn.ModuleList([])
-        for i in range(len(in_dim_list)):
-            self.out_proj.append(nn.Conv2d(dim, in_dim_list[i], kernel_size=1, bias=False))
+            self.fusion = TransformerBlock(dim, depth, heads, dim//heads, dim, attn_drop=0., proj_drop=0.)
+            
+            # project all maps back to their origin channel num
+            self.out_proj = nn.ModuleList([])
+            for i in range(len(in_dim_list)):
+                self.out_proj.append(nn.Conv2d(dim, in_dim_list[i], kernel_size=1, bias=False))
 
         
 
     def forward(self, map_list):
-        B, _, H, W = map_list[0].shape
-        proj_maps = [self.in_proj[i](map_list[i]).view(B, self.dim, -1).permute(0, 2, 1) for i in range(len(map_list))]
-        # B, L, C where L=HW
         
-        proj_maps = torch.cat(proj_maps, dim=1)
+        if self.depth == 0:
+            return map_list
+        else:
+            B, _, H, W = map_list[0].shape
+            proj_maps = [self.in_proj[i](map_list[i]).view(B, self.dim, -1).permute(0, 2, 1) for i in range(len(map_list))]
+            # B, L, C where L=HW
+            
+            proj_maps = torch.cat(proj_maps, dim=1)
 
-        attned_maps = self.fusion(proj_maps)
+            attned_maps = self.fusion(proj_maps)
 
-        attned_maps = attned_maps.chunk(len(map_list), dim=1)
+            attned_maps = attned_maps.chunk(len(map_list), dim=1)
 
-        maps_out = [self.out_proj[i](attned_maps[i].permute(0, 2, 1).view(B, self.dim, H, W)) for i in range(len(map_list))]
+            maps_out = [self.out_proj[i](attned_maps[i].permute(0, 2, 1).view(B, self.dim, H, W)) for i in range(len(map_list))]
 
-        return maps_out
-
-        
-
-
-
-        
-
+            return maps_out
 
             
-
-
 
 
 #######################################################################
@@ -266,7 +258,7 @@ class down_block(nn.Module):
     def __init__(self, in_ch, out_ch, conv_num, trans_num, conv_block=BasicBlock, 
                 heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0., map_size=8, 
                 proj_type='depthwise', norm=nn.BatchNorm2d, act=nn.GELU, map_generate=False,
-                map_proj=True, map_dim=None):
+                map_dim=None):
         super().__init__()
 
         map_dim = out_ch if map_dim is None else map_dim
@@ -275,7 +267,7 @@ class down_block(nn.Module):
             self.map_gen = SemanticMapGeneration(out_ch, map_dim, map_size)
         
 
-        self.patch_merging = PatchMerging(in_ch, out_ch, proj_type=proj_type, norm=norm, map_proj=map_proj)
+        self.patch_merging = PatchMerging(in_ch, out_ch, proj_type=proj_type, norm=norm)
         
         block_list = []
         for i in range(conv_num):
@@ -289,13 +281,15 @@ class down_block(nn.Module):
             attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type)
 
 
-    def forward(self, x, semantic_map=None):
+    def forward(self, x):
         
-        x, semantic_map = self.patch_merging(x, semantic_map)
+        x = self.patch_merging(x)
 
         out = self.conv_blocks(x)
         if self.map_generate:
             semantic_map = self.map_gen(out)
+        else:
+            semantic_map = None
 
         out, semantic_map = self.trans_blocks(out, semantic_map)
 
@@ -345,7 +339,9 @@ class up_block(nn.Module):
             semantic_map = torch.cat([map1, map2], dim=1)
         else:
             semantic_map = map1
-        semantic_map = self.map_reduction(semantic_map)
+
+        if semantic_map is not None:
+            semantic_map = self.map_reduction(semantic_map)
 
         out, semantic_map = self.trans_blocks(out, semantic_map)
         out = self.conv_blocks(out)

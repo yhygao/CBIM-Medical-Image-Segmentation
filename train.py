@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     
     if not os.path.exists('exp/exp_%s'%args.dataset):
-        os.mkdir('exp/exp_%s'%args.dataset)
+        os.makedirs('exp/exp_%s'%args.dataset)
 
     with open('exp/exp_%s/%s.txt'%(args.dataset, args.unique_name), 'w') as f:
 
