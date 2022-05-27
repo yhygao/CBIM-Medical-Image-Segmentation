@@ -3,7 +3,12 @@
 This repo is a PyTorch-based framework for medical image segmentation, whose goal is to provide an easy-to-use framework for academic researchers to develop and 
 evaluate deep learning models. It provides fair evaluation and comparison of CNNs and Transformers on multiple medical image datasets. 
 
-### Features:
+### News
+We've released a new version paper of UTNetV2, including more experiments and analysis, see in our new version arxiv paper: [UTNetV2](https://arxiv.org/abs/2203.00131)
+
+Supports for BCV and LiTS dataset have been updated.
+
+### Features
 - Cover the whole process of model design, including dataset processing, model definition, model configuration, training and evaluation.
 - Provide SOTA models as baseline for comparison. Model definition, training and evaluation code are simple with no complex code encapsulation.
 - Provide models, losses, metrics, augmentation and etc. for 2D, 3D data, multiple modalities and multiple tasks.
