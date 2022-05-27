@@ -24,6 +24,8 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 
 ### Supporting Datasets
 - [ACDC](https://www.creatis.insa-lyon.fr/Challenge/acdc/databases.html) Cardiac MRI
+- [BCV](https://www.synapse.org/#!Synapse:syn3193805/wiki/217789) Abdomen Organ CT
+- [LiTS](https://competitions.codalab.org/competitions/17094) Liver and Tumor CT
 - More datasets are comming soon
 
 
@@ -63,6 +65,8 @@ The training process will be logged by tensorboard, including training loss, tes
 
 ### To Do
 Add multi-GPU parallelism support.
+
+Add MSD dataset support.
 
 We'll continously maintain this repo to add more SOTA models, and add more dataset support. 
 
