@@ -91,11 +91,13 @@ If you find this repo helps, please kindly cite our paper, thanks!
   organization={Springer}
 }
 
-@article{gao2022data,
-  title={A Data-scalable Transformer for Medical Image Segmentation: Architecture, Model Efficiency, and Benchmark},
-  author={Gao, Yunhe and Zhou, Mu and Liu, Di and Yan, Zhennan and Zhang, Shaoting and Metaxas, Dimitris N.},
-  journal={arXiv preprint arXiv:2203.00131},
-  year={2022}
+@misc{gao2022datascalable,
+      title={A Data-scalable Transformer for Medical Image Segmentation: Architecture, Model Efficiency, and Benchmark}, 
+      author={Yunhe Gao and Mu Zhou and Di Liu and Zhennan Yan and Shaoting Zhang and Dimitris N. Metaxas},
+      year={2022},
+      eprint={2203.00131},
+      archivePrefix={arXiv},
+      primaryClass={eess.IV}
 }
 
 ```
