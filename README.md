@@ -42,7 +42,7 @@ If you want to use our framework, please follow below steps.
 #### Install requirements
 Create a new virtual environment and install all dependencies by:
 ```
-pip install -r requirements.txt
+pip install -r requirement.txt
 ```
 #### Data preparation
 Download the origin dataset from their corresponding official website.
