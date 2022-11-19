@@ -4,7 +4,7 @@ This repo is a PyTorch-based framework for medical image segmentation, whose goa
 evaluate deep learning models. It provides fair evaluation and comparison of CNNs and Transformers on multiple medical image datasets. 
 
 ### News
-We've released a new version paper of UTNetV2, including more experiments and analysis, see in [UTNetV2](https://arxiv.org/abs/2203.00131)
+We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 
 Supports for BCV and LiTS dataset have been updated.
 
@@ -16,7 +16,7 @@ Supports for BCV and LiTS dataset have been updated.
 
 
 ### Supporting models
-- [UTNetV2](https://arxiv.org/abs/2203.00131) (Official implementation)
+- [MedFormer](https://arxiv.org/abs/2203.00131) (Official implementation)
 - UNet. Including 2D, 3D with different building block, e.g. double conv, Residual BasicBlock, Bottleneck, MBConv, or ConvNeXt block.
 - [UNet++](https://arxiv.org/abs/1807.10165)
 - [Attention UNet](https://arxiv.org/abs/1804.03999)
