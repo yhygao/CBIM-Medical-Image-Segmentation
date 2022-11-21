@@ -140,7 +140,7 @@ class PatchMerging(nn.Module):
 class BasicLayer(nn.Module):
     """
     A basic transformer layer for one stage
-    No downsample of upsample operation in this layer, they are wraped in the down_block or up_block of UTNet
+    No downsample of upsample operation in this layer, they are wraped in the down_block or up_block 
     """
 
     def __init__(self, feat_dim, map_dim, out_dim, num_blocks, heads=4, dim_head=64, expansion=1, attn_drop=0., proj_drop=0., map_size=8, proj_type='depthwise', norm=nn.BatchNorm2d, act=nn.GELU):
@@ -235,7 +235,7 @@ class SemanticMapFusion(nn.Module):
 
 
 #######################################################################
-# UTNet block that for one stage, which contains conv block and trans block
+# Building block that for one stage, which contains conv block and trans block
 
 
 class inconv(nn.Module):

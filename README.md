@@ -56,13 +56,13 @@ Then, `python xxxdataset.py`
 After processing is finished, put the processed dataset into `dataset/` folder or use a soft link.
 
 #### Configuration
-Enter `config/xxxdataset/` and find the model and dimension (2d or 3d) you want to use. The training details, e.g. model hyper-parameters, training epochs, learning rate, optimizer, data augmentation, etc., can be altered here. You can try your own congiguration or use the default configure, the one we used in the UTNetV2 paper, which should have a decent performance. The only thing to care is the `data_root`, make sure it points to the processed dataset directory.
+Enter `config/xxxdataset/` and find the model and dimension (2d or 3d) you want to use. The training details, e.g. model hyper-parameters, training epochs, learning rate, optimizer, data augmentation, etc., can be altered here. You can try your own congiguration or use the default configure, the one we used in the MedFormer paper, which should have a decent performance. The only thing to care is the `data_root`, make sure it points to the processed dataset directory.
 
 #### Training
-After the data, model and training strategy are configured, we can start training. Several arguments can be parsed in command line. You need to specify the model, the dimension, the dataset, whether use pretrain weights, batch size, and the experiment name. Our code will find the corresponding configuration for training. Here is an example to train 3D UTNetv2 on acdc.
+After the data, model and training strategy are configured, we can start training. Several arguments can be parsed in command line. You need to specify the model, the dimension, the dataset, whether use pretrain weights, batch size, and the experiment name. Our code will find the corresponding configuration for training. Here is an example to train 3D MedFormer on acdc.
 
 ```
-python train.py --model utnetv2 --dimension 3d --dataset acdc --batch_size 3 --unique_name acdc_3dutnetv2 --gpu 0
+python train.py --model medformer --dimension 3d --dataset acdc --batch_size 3 --unique_name acdc_3d_medformer --gpu 0
 ```
 
 The training process will be logged by tensorboard, including training loss, testing performance, and etc. You can find it in the `log/unique_name` folder and use it to monitor the training process. After the training is done, the result of cross-validation will be stored in the `exp/exp_unique_name` folder.

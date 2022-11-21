@@ -4,4 +4,4 @@ from .attention_unet import AttentionUNet
 from .dual_attention_unet import DAUNet
 from .transunet import VisionTransformer
 from .swin_unet import SwinUnet
-from .utnetv2 import UTNetV2
+from .medformer import MedFormer

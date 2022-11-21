@@ -149,7 +149,7 @@ class PatchMerging(nn.Module):
 class BasicLayer(nn.Module):
     """
     A basic transformer layer for one stage
-    No downsample or upsample operation in this layer, they are wrapped in the down_block of up_block of UTNet
+    No downsample or upsample operation in this layer, they are wrapped in the down_block of up_block
     """
 
     def __init__(self, feat_dim, map_dim, out_dim, num_blocks, heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0., map_size=[8,8,8], proj_type='depthwise', norm=nn.BatchNorm3d, act=nn.GELU, kernel_size=[3,3,3]):
