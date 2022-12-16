@@ -1,10 +1,10 @@
-#DATA
+# DATA
 data_root: dataset/acdc_3d
 classes: 4
 modality: mri
 
 
-#MODEL
+# MODEL
 arch: unet
 in_chan: 1
 base_chan: 32
@@ -13,12 +13,13 @@ kernel_size: [[1,3,3], [2,3,3], [3,3,3], [3,3,3], [3,3,3]]
 block: SingleConv
 norm: in
 
-#TRAIN
-epochs: 200
+# TRAIN
+epochs: 1
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
+num_workers: 2
 
-seed: 0
+split_seed: 0
 k_fold: 5
 
 optimizer: adamw
@@ -35,17 +36,28 @@ gaussian_noise_std: 0.02
 additive_brightness_std: 0.7 
 gamma_range: [0.5, 1.6]
 
+print_freq: 1
+iter_per_epoch: 20
 
-iter_per_epoch: 200
 
-
-#VALIDATION
-ema: True
+# VALIDATION
+ema: False
 ema_alpha: 0.99
-val_frequency: 10
+val_frequency: 1
 
 
 
-#INFERENCE
+# INFERENCE
 sliding_window: True
 window_size: [16, 192, 192]
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 60000
+dist_url: 'tcp://localhost:60000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: false
+reproduce_seed: null

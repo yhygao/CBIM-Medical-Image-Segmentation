@@ -10,6 +10,9 @@ import math
 import random
 import pdb
 from training import augmentation
+import logging
+import copy
+
 
 class CMRDataset(Dataset):
     def __init__(self, args, mode='train', k_fold=5, k=0, seed=0):
@@ -26,21 +29,22 @@ class CMRDataset(Dataset):
 
         length = len(img_name_list)
         test_name_list = img_name_list[k*(length//k_fold):(k+1)*(length//k_fold)]
+        train_name_list = img_name_list
         train_name_list = list(set(img_name_list) - set(test_name_list))
 
         if mode == 'train':
             img_name_list = train_name_list
         else:
-            img_name_list = test_name_list
+            img_name_list = test_name_list[:2]
         
-        print('start loading %s data'%self.mode)
+        logging.info(f"Start loading {self.mode} data")
         
         path = args.data_root
 
         img_list = []
         lab_list = []
         spacing_list = []
-
+        
         for name in img_name_list:
             for idx in [0, 1]:
                 
@@ -59,28 +63,29 @@ class CMRDataset(Dataset):
 
                 img_list.append(img)
                 lab_list.append(lab)
-                               
-       
+      
         self.img_slice_list = []
         self.lab_slice_list = []
         if self.mode == 'train':
             for i in range(len(img_list)):
-                tmp_img = img_list[i]
-                tmp_lab = lab_list[i]
 
-                z, x, y = tmp_img.shape
+                z, x, y = img_list[i].shape
 
                 for j in range(z):
-                    self.img_slice_list.append(tmp_img[j])
-                    self.lab_slice_list.append(tmp_lab[j])
-
+                    self.img_slice_list.append(copy.deepcopy(img_list[i][j]))
+                    self.lab_slice_list.append(copy.deepcopy(lab_list[i][j]))
+            del img_list
+            del lab_list
         else:
             self.img_slice_list = img_list
             self.lab_slice_list = lab_list
             self.spacing_list = spacing_list
-
-        print('load done, length of dataset:', len(self.img_slice_list))
         
+        
+        logging.info(f"Load done, length of dataset: {len(self.img_slice_list)}")
+
+
+
     def __len__(self):
         return len(self.img_slice_list)
 
@@ -114,10 +119,13 @@ class CMRDataset(Dataset):
 
 
     def __getitem__(self, idx):
+
+
         tensor_img = self.img_slice_list[idx]
         tensor_lab = self.lab_slice_list[idx]
         
-       
+
+
         if self.mode == 'train':
             tensor_img = tensor_img.unsqueeze(0).unsqueeze(0)
             tensor_lab = tensor_lab.unsqueeze(0).unsqueeze(0)

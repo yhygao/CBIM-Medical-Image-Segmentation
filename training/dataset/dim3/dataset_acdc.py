@@ -10,6 +10,9 @@ import math
 import random
 import pdb
 from training import augmentation
+import logging
+import copy
+
 
 class CMRDataset(Dataset):
     def __init__(self, args, mode='train', k_fold=5, k=0, seed=0):
@@ -32,10 +35,10 @@ class CMRDataset(Dataset):
         if mode == 'train':
             img_name_list = train_name_list
         else:
-            img_name_list = test_name_list
+            img_name_list = test_name_list[:2]
 
 
-        print('Start loading %s data'%self.mode)
+        logging.info(f'Start loading {self.mode} data')
 
         path = args.data_root
 
@@ -63,7 +66,7 @@ class CMRDataset(Dataset):
                 self.lab_list.append(lab)
 
         
-        print('Load done, length of dataset:', len(self.img_list))
+        logging.info(f"Load done, length of dataset: {len(self.img_list)}")
 
     def __len__(self):
         if self.mode == 'train':
