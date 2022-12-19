@@ -2,6 +2,7 @@ import os
 import logging
 import torch
 import torch.distributed as dist
+import pdb
 
 LOG_FORMAT = "[%(levelname)s] %(asctime)s %(filename)s:%(lineno)s %(message)s"
 LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
@@ -26,7 +27,17 @@ def configure_logger(rank, log_path=None):
     )
 
 
-
+def save_configure(args):
+    if hasattr(args, "distributed"):
+        if (args.distributed and is_master(args)) or (not args.distributed):
+            with open(f"{args.cp_dir}/config.txt", 'w') as f:
+                for name in args.__dict__:
+                    f.write(f"{name}: {getattr(args, name)}\n")
+    else:
+        with open(f"{args.cp_dir}/config.txt", 'w') as f:
+            for name in args.__dict__:
+                f.write(f"{name}: {getattr(args, name)}\n")
+            
 
 
 

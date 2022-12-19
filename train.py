@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 
 from utils import (
     configure_logger,
+    save_configure,
     AverageMeter,
     ProgressMeter,
 )
@@ -66,13 +67,13 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
         logging.info(f"Current lr: {exp_scheduler:.4e}")
         
-        train_epoch(trainLoader, net, optimizer, epoch, writer, criterion, criterion_dl, args)
+        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args)
         
         ########################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net 
         
-        if (epoch+1) % args.val_frequency == 0:
+        if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
             log_evaluation_result(writer, dice_list_test, ASD_list_test, HD_list_test, 'test', epoch, args)
@@ -92,11 +93,13 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     return best_Dice, best_HD, best_ASD
 
 
-def train_epoch(trainLoader, net, optimizer, epoch, writer, criterion, criterion_dl, args):
+def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args):
     batch_time = AverageMeter("Time", ":6.2f")
     epoch_loss = AverageMeter("Loss", ":.2f")
     progress = ProgressMeter(
-        len(trainLoader), [batch_time, epoch_loss], prefix="Epoch: [{}]".format(epoch+1),
+        len(trainLoader) if args.dimension=='2d' else args.iter_per_epoch, 
+        [batch_time, epoch_loss], 
+        prefix="Epoch: [{}]".format(epoch+1),
     )   
     
     net.train()
@@ -195,12 +198,13 @@ def init_network(args):
 
     if args.load:
         net.load_state_dict(torch.load(args.load))
-        print('Model loaded from {}'.format(args.load))
+        logging.info('Model loaded from {}'.format(args.load))
 
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
         for p in ema_net.parameters():
             p.requires_grad_(False)
+        logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
     return net, ema_net 
@@ -219,6 +223,7 @@ if __name__ == '__main__':
         args.cp_dir = f"{args.cp_path}/{args.dataset}/{args.unique_name}"
         os.makedirs(args.cp_dir, exist_ok=True)
         configure_logger(0, args.cp_dir+f"/fold_{fold_idx}.txt")
+        save_configure(args)
         logging.info(
             f"\nDataset: {args.dataset},\n"
             + f"Model: {args.model},\n"

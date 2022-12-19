@@ -18,7 +18,7 @@ epochs: 200
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
 
-seed: 0
+split_seed: 0
 k_fold: 5
 
 optimizer: adamw
@@ -35,14 +35,14 @@ gaussian_noise_std: 0.02
 additive_brightness_std: 0.7 
 gamma_range: [0.5, 1.6]
 
-
+print_freq: 5
 iter_per_epoch: 200
 
 
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_frequency: 10
+val_freq: 10
 
 
 

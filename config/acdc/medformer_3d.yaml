@@ -5,7 +5,7 @@ modality: mri
 
 
 #MODEL
-arch: utnetv3
+arch: medformer
 in_chan: 1
 base_chan: 32
 conv_block: 'BasicBlock'
@@ -20,7 +20,7 @@ trans_num: [0,2,2,2, 2,2,0,0]
 num_heads: [1,4,4,4, 4,4,1,1]
 expansion: 4
 fusion_depth: 2
-fusion_dim: 256 #256
+fusion_dim: 256
 fusion_heads: 4
 attn_drop: 0.
 proj_drop: 0.
@@ -33,19 +33,22 @@ se: True
 epochs: 150
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
+num_workers: 2 # modify this if I/O or augmentation is slow
 
 aux_loss: False
 aux_weight: [0.7, 0.3]
 
-seed: 0
-k_fold: 5
+split_seed: 0 # random seed for train/test split (shuffle) before setting cross validation fold
+k_fold: 5 # number of folds in cross validation
 
 optimizer: adamw
-base_lr: 0.001 #0.001
+base_lr: 0.001 
 betas: [0.9, 0.999]
-weight_decay: 0.05  # weight decay of SGD optimizer
+weight_decay: 0.05  # weight decay of the optimizer
 weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
+
+print_freq: 1
 iter_per_epoch: 200
 
 
@@ -63,10 +66,21 @@ gamma_range: [0.5, 1.6]
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_frequency: 10
+val_freq: 10
 
 
 
 #INFERENCE
 sliding_window: True
 window_size: [16, 192, 192]
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true # if use PyTorch DDP for multi-gpu training 
+reproduce_seed: null

@@ -33,7 +33,8 @@ import matplotlib.pyplot as plt
 import copy
 
 from utils import (
-    configure_logger, 
+    configure_logger,
+    save_configure,
     is_master,
     AverageMeter,
     ProgressMeter,
@@ -100,12 +101,12 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
         logging.info(f"Current lr: {exp_scheduler:.4e}")
        
-        train_epoch(trainLoader, net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args)
+        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args)
         
         ##################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net
-        if (epoch+1) % args.val_frequency == 0:
+        if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
             if is_master(args):
@@ -127,11 +128,13 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     return best_Dice, best_HD, best_ASD
 
 
-def train_epoch(trainLoader, net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args):
+def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args):
     batch_time = AverageMeter("Time", ":6.2f")
     epoch_loss = AverageMeter("Loss", ":.2f")
     progress = ProgressMeter(
-        len(trainLoader), [batch_time, epoch_loss], prefix="Epoch: [{}]".format(epoch+1),
+        len(trainLoader) if args.dimension=='2d' else args.iter_per_epoch, 
+        [batch_time, epoch_loss], 
+        prefix="Epoch: [{}]".format(epoch+1),
     )
     
     net.train()
@@ -251,7 +254,12 @@ def init_network(args):
         net.load_state_dict(torch.load(args.load))
         logging.info(f"Model loaded from {args.load}")
 
-    ema_net = get_model(args, pretrain=args.pretrain) if args.ema else None
+    if args.ema:
+        ema_net = get_model(args, pretrain=args.pretrain)
+        logging.info("Use EMA model for evaluation")
+    else:
+        ema_net = None
+
     return net, ema_net 
 
 
@@ -304,6 +312,8 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
     args.cp_dir = f"{args.cp_path}/{args.dataset}/{args.unique_name}"
     os.makedirs(args.cp_dir, exist_ok=True)
     configure_logger(args.rank, args.cp_dir+f"/fold_{fold_idx}.txt")
+    save_configure(args)
+
     logging.info(
         f"\nDataset: {args.dataset},\n"
         + f"Model: {args.model},\n"
@@ -318,7 +328,8 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         ema_net.to('cuda')
     if args.distributed:
         net = nn.SyncBatchNorm.convert_sync_batchnorm(net)
-        net = DistributedDataParallel(net, device_ids=[args.proc_idx], find_unused_parameters=False)
+        net = DistributedDataParallel(net, device_ids=[args.proc_idx], find_unused_parameters=True)
+        # set find_unused_parameters to True if some of the parameters is not used in forward
         
         if args.ema:
             ema_net = nn.SyncBatchNorm.convert_sync_batchnorm(ema_net)

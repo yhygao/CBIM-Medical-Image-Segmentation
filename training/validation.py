@@ -30,7 +30,8 @@ def validation(net, dataloader, args):
     logging.info("Evaluating")
 
     with torch.no_grad():
-        for i, (images, labels, spacing) in enumerate(dataloader):
+        iterator = tqdm(dataloader)
+        for (images, labels, spacing) in iterator:
             # spacing here is used for distance metrics calculation
             
             inputs, labels = images.float().cuda(), labels.long().cuda()
@@ -50,7 +51,7 @@ def validation(net, dataloader, args):
                 
 
             tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
-            # comment this for fast debugging
+            # comment this for fast debugging (HD and ASD computation for large 3D image is slow)
             #tmp_ASD_list = np.zeros(args.classes-1)
             #tmp_HD_list = np.zeros(args.classes-1)
 
@@ -120,7 +121,7 @@ def validation_ddp(net, dataloader, args):
  
 
             tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
-            # comment this for fast debugging
+            # comment this for fast debugging. (HD and ASD computation for large 3D images are slow)
             #tmp_ASD_list = np.zeros(args.classes-1)
             #tmp_HD_list = np.zeros(args.classes-1)
 

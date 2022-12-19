@@ -35,7 +35,7 @@ class CMRDataset(Dataset):
         if mode == 'train':
             img_name_list = train_name_list
         else:
-            img_name_list = test_name_list[:2]
+            img_name_list = test_name_list
         
         logging.info(f"Start loading {self.mode} data")
         
