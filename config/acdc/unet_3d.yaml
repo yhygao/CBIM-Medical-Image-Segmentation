@@ -36,7 +36,7 @@ gaussian_noise_std: 0.02
 additive_brightness_std: 0.7 
 gamma_range: [0.5, 1.6]
 
-print_freq: 1
+print_freq: 5
 iter_per_epoch: 200
 
 
