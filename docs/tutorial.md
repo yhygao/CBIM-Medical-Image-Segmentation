@@ -67,7 +67,7 @@ Example of using DDP:
 
 Example of using DDP and AMP:
 
-`python train_ddp.py --model medformer --dimension 3d --dataset acdc --batch_size 32 --unique_name acdc_3d_medformer_ddp_amp --gpu 0,1,2,3`
+`python train_ddp.py --model medformer --dimension 3d --dataset acdc --batch_size 32 --unique_name acdc_3d_medformer_ddp_amp --gpu 0,1,2,3 --amp`
 
 We have not fully benchmark if AMP can speed up training, but AMP can reduce the GPU memory consumption a lot.
 
