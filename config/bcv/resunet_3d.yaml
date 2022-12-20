@@ -17,8 +17,9 @@ norm: in
 epochs: 150
 training_size: [32, 128, 128] # training crop size
 start_epoch: 0
+num_workers: 2
 
-seed: 0
+split_seed: 0
 k_fold: 5
 
 optimizer: adamw
@@ -33,17 +34,30 @@ rotate: [30, 30, 30] # rotation angle for data augmentation
 translate: [0, 0, 0]
 gaussian_noise_std: 0.02
 
-
+print_freq: 5
 iter_per_epoch: 300
 
 
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_frequency: 10
+val_freq: 10
 
 
 
 #INFERENCE
 sliding_window: True
 window_size: [32, 128, 128]
+
+
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true
+reproduce_seed: null

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from torch import optim
 
 
@@ -81,3 +82,44 @@ def update_ema_variables(model, ema_model, alpha, global_step):
 
     for ema_buffer, m_buffer in zip(ema_model.buffers(), model.buffers()):
         ema_buffer.copy_(m_buffer)
+
+
+
+@torch.no_grad()
+def concat_all_gather(tensor):
+    """ 
+    Performs all_gather operation on the provided tensor
+    *** Warning ***: torch.distributed.all_gather has no gradient.
+    """
+    tensors_gather = [torch.ones_like(tensor) for _ in range(dist.get_world_size())]
+    dist.all_gather(tensors_gather, tensor, async_op=False)
+
+    output = torch.cat(tensors_gather, dim=0)
+    return output
+
+
+@torch.no_grad()
+def remove_wrap_arounds(tensor, ranks):
+    """ 
+    Due to the DistributedSampler will pad samples for evenly distribute
+    samples to gpus, the padded samples need to be removed for right
+    evaluation. Need to turn shuffle to False for the dataloader.
+    """
+    if ranks == 0:
+        return tensor
+
+    world_size = dist.get_world_size()
+    single_length = len(tensor) // world_size
+    output = []
+
+    for rank in range(world_size):
+        sub_tensor = tensor[rank * single_length : (rank+1) * single_length]
+        if rank >= ranks:
+            output.append(sub_tensor[:-1])
+        else:
+            output.append(sub_tensor)
+
+    output = torch.cat(output)
+
+    return output
+

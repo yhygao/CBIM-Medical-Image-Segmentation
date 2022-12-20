@@ -14,14 +14,15 @@ downsample_scale: [[1,2,2], [2,2,2], [2,2,2], [2,2,2]]
 epochs: 250
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
+num_workers: 2
 
-seed: 0
+split_seed: 0
 k_fold: 5
 
 optimizer: adamw
 base_lr: 0.001
 betas: [0.9, 0.999]
-weight_decay: 0.05  # weight decay of SGD optimizer
+weight_decay: 0.05  # weight decay of the optimizer
 weight: [0.5, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 
@@ -32,17 +33,28 @@ gaussian_noise_std: 0.02
 additive_brightness_std: 0.7
 gamma_range: [0.5, 1.6]
 
-
+print_freq: 1
 iter_per_epoch: 200
 
 
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_frequency: 10
+val_freq: 10
 
 
 
 #INFERENCE
 sliding_window: True
 window_size: [16, 192, 192]
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true # if use PyTorch DDP for multi-gpu training 
+reproduce_seed: null

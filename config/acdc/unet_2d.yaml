@@ -1,22 +1,23 @@
-#DATA
+# DATA
 data_root: dataset/acdc_2d
 classes: 4
 modality: mri
 
 
-#MODEL
+# MODEL
 arch: unet
 in_chan: 1
 base_chan: 32
 block: SingleConv
 
 
-#TRAIN
+# TRAIN
 epochs: 150
 training_size: [256, 256]    # training crop size
 start_epoch: 0
+num_workers: 4 # modify this if I/O or augmentation is slow
 
-seed: 0     # random seed for suffle before setting cross validation fold
+split_seed: 0     # random seed for train/test split (shuffle) before setting cross validation fold
 k_fold: 5   # number of folds in cross validation
 
 optimizer: adamw
@@ -33,13 +34,26 @@ gaussian_noise_std: 0.02
 additive_brightness_std: 0.7
 gamma_range: [0.5, 1.6]
 
+print_freq: 5
 
-#VALIDATION
+
+# VALIDATION
 ema: True
 ema_alpha: 0.99
-val_frequency: 10
+val_freq: 10 # evaluate every val_freq epochs
 
 
 
-#INFERENCE
+# INFERENCE
 sliding_window: False
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # make sure the port here is the same as in port
+dist_backend: "nccl"
+multiprocessing_distributed: true # if use PyTorch DDP for multi-gpu training
+reproduce_seed: null
