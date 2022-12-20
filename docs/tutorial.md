@@ -84,21 +84,17 @@ Actually, you can write at your will as long as the PyTorch Dataset can correctl
 
 -list/
 
-|- name_data01.nii.gz
-
-|- name_data01_gt.nii.gz
-
-|- name_data02.nii.gz
-
-|- name_data02_gt.nii.gz
-
-|- ...
-
-|- name_datan.nii.gz
-
+|- name_data01.nii.gz  
+|- name_data01_gt.nii.gz  
+|- name_data02.nii.gz  
+|- name_data02_gt.nii.gz  
+|- ...  
+|- name_datan.nii.gz  
 |- name_datan_gt.nii.gz
 
 All the names are saved as a yaml file in the `list/dataset.yaml`. You can save the data into your familar format, the `.nii.gz` is just an example. 
+
+#### Write Dataset
 
 After processing the data, you need to write the PyTorch Dataset, and save it into `training/dataset/`. Costumized `__init__()` `__len__()` and `__getitem__()` functions are needed. As 3D medical images are usually large and I/O takes a long time, I usually load all data into memory to reduce I/O time. The augmentation are done on the fly during training, you need to specify the augmentation used in the `__getitem__()` function. We provide some commonly used augmentation operations in `training/augmentation.py`.
 
