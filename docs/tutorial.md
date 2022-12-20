@@ -82,8 +82,7 @@ In this step, you need to preprocess the data and write the PyTorch Dataset. You
 
 Actually, you can write at your will as long as the PyTorch Dataset can correctly sample data during training. But we recomand you to follow our examples to make the processed dataset. First, resample all data samples and corresponding labels to the median spacing. Resample the images with BSpline resampling. Resample the labels with NearestNeighbor resampling. Then store all the processed images and labels into the target path using the following structure:
 
--list/
-
+|-list/  
 |- name_data01.nii.gz  
 |- name_data01_gt.nii.gz  
 |- name_data02.nii.gz  
@@ -107,6 +106,7 @@ The model definitions are in the `model/` folder. Put your own model into the co
 
 #### Training and evaluation
 
+After all steps are finished, you can train the customized model and dataset as our examples for public datasets. If you need customized inference or evaluation, please see in `inferece/` and `training/validation.py`.
 
 
 
