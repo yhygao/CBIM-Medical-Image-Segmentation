@@ -7,8 +7,8 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
 
-- Support PyTorch DDP and AMP training. (Dec. 19. 2022)
-- Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)
+- **Support PyTorch DDP and AMP training. (Dec. 19. 2022)**
+- **Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)**
 - Supports for BCV and LiTS dataset have been updated.
 
 ### Features
