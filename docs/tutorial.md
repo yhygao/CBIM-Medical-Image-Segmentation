@@ -83,12 +83,19 @@ In this step, you need to preprocess the data and write the PyTorch Dataset. You
 Actually, you can write at your will as long as the PyTorch Dataset can correctly sample data during training. But we recomand you to follow our examples to make the processed dataset. First, resample all data samples and corresponding labels to the median spacing. Resample the images with BSpline resampling. Resample the labels with NearestNeighbor resampling. Then store all the processed images and labels into the target path using the following structure:
 
 -list/
+
 |- name_data01.nii.gz
+
 |- name_data01_gt.nii.gz
+
 |- name_data02.nii.gz
+
 |- name_data02_gt.nii.gz
+
 |- ...
+
 |- name_datan.nii.gz
+
 |- name_datan_gt.nii.gz
 
 All the names are saved as a yaml file in the `list/dataset.yaml`. You can save the data into your familar format, the `.nii.gz` is just an example. 
