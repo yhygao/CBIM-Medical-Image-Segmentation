@@ -61,4 +61,4 @@ port: 10000
 dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
 dist_backend: "nccl"
 multiprocessing_distributed: true # if use PyTorch DDP for multi-gpu training 
-reproduce_seed: null
+reproduce_seed: 2023
