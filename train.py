@@ -219,12 +219,12 @@ if __name__ == '__main__':
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)
         np.random.seed(args.reproduce_seed)
-        torch.mannual_seed(args.reproduce_seed)
+        torch.manual_seed(args.reproduce_seed)
 
         if hasattr(torch, 'set_deterministic'):
             torch.set_deterministic(True)
         torch.backends.cudnn.benchmark = False
-        torch.backend.cudnn.deterministic = True
+        torch.backends.cudnn.deterministic = True
    
     Dice_list, HD_list, ASD_list = [], [], []
 

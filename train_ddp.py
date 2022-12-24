@@ -276,7 +276,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         if hasattr(torch, "set_deterministic"):
             torch.set_deterministic(True)
         torch.backends.cudnn.benchmark = False
-        torch.backend.cudnn.deterministic = True
+        torch.backends.cudnn.deterministic = True
 
     # set process specific info
     args.proc_idx = proc_idx
