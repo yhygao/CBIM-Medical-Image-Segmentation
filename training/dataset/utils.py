@@ -23,4 +23,8 @@ def get_dataset(args, mode, **kwargs):
 
             return BCVDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 
+        elif args.dataset == 'kits':
+            from .dim3.dataset_kits import KidneyDataset
+
+            return KidneyDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 

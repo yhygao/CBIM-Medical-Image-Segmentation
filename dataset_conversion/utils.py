@@ -47,6 +47,8 @@ def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkLinear):
 
 
 def CropForeground(imImage, imLabel, context_size=[10, 30, 30]):
+    # the context_size is in numpy indice order: z, y, x
+    # Note that SimpleITK use the indice order of: x, y, z
     
     npImg = sitk.GetArrayFromImage(imImage)
     npLab = sitk.GetArrayFromImage(imLabel)
@@ -56,24 +58,24 @@ def CropForeground(imImage, imLabel, context_size=[10, 30, 30]):
     regions = regionprops(mask)
     assert len(regions) == 1
 
-    zz, xx, yy = npImg.shape
+    zz, yy, xx = npImg.shape
 
-    z, x, y = regions[0].centroid
+    z, y, x = regions[0].centroid
 
-    z_min, x_min, y_min, z_max, x_max, y_max = regions[0].bbox
-    print('forground size:', z_max-z_min, x_max-x_min, y_max-y_min)
+    z_min, y_min, x_min, z_max, y_max, x_max = regions[0].bbox
+    print('forground size:', z_max-z_min, y_max-y_min, x_max-x_min)
 
-    z, x, y = int(z), int(x), int(y)
+    z, y, x = int(z), int(y), int(x)
 
     z_min = max(0, z_min-context_size[0])
     z_max = min(zz, z_max+context_size[0])
-    x_min = max(0, x_min-context_size[1])
-    x_max = min(xx, x_max+context_size[1])
     y_min = max(0, y_min-context_size[2])
     y_max = min(yy, y_max+context_size[2])
+    x_min = max(0, x_min-context_size[1])
+    x_max = min(xx, x_max+context_size[1])
 
-    img = npImg[z_min:z_max, x_min:x_max, y_min:y_max]
-    lab = npLab[z_min:z_max, x_min:x_max, y_min:y_max]
+    img = npImg[z_min:z_max, y_min:y_max, x_min:x_max]
+    lab = npLab[z_min:z_max, y_min:y_max, x_min:x_max]
 
     croppedImage = sitk.GetImageFromArray(img)
     croppedLabel = sitk.GetImageFromArray(lab)
