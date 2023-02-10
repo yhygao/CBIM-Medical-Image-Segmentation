@@ -35,8 +35,8 @@ training_size: [16, 192, 192] # training crop size
 start_epoch: 0
 num_workers: 2 # modify this if I/O or augmentation is slow
 
-aux_loss: False
-aux_weight: [0.7, 0.3]
+aux_loss: True
+aux_weight: [0.5, 0.5]
 
 split_seed: 0 # random seed for train/test split (shuffle) before setting cross validation fold
 k_fold: 5 # number of folds in cross validation

@@ -121,21 +121,21 @@ class KidneyDataset(Dataset):
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
 
-            if np.random.random() < 0.15:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
-            if np.random.random() < 0.15:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
-            if np.random.random() < 0.15:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
             if np.random.random() < 0.3:
                 tensor_img = augmentation.mirror(tensor_img, axis=2)
                 tensor_lab = augmentation.mirror(tensor_lab, axis=2)
-            if np.random.random() < 0.2:
+            if np.random.random() < 0.3:
                 tensor_img = augmentation.mirror(tensor_img, axis=1)
                 tensor_lab = augmentation.mirror(tensor_lab, axis=1)
-            if np.random.random() < 0.05:
-                tensor_img = augmentation.mirror(tensor_img, axis=1)
-                tensor_lab = augmentation.mirror(tensor_lab, axis=1)
+            if np.random.random() < 0.3:
+                tensor_img = augmentation.mirror(tensor_img, axis=0)
+                tensor_lab = augmentation.mirror(tensor_lab, axis=0)
 
 
             

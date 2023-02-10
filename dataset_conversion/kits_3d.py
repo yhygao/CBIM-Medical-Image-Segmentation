@@ -32,16 +32,16 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
     imLabel.SetDirection((1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
 
 
-    re_img_xy = ResampleXYZAxis(imImage, space=(spacing[0], target_spacing[1], target_spacing[2]), interp=sitk.sitkBSpline)
-    re_lab_xy = ResampleLabelToRef(imLabel, re_img_xy, interp=sitk.sitkNearestNeighbor)
+    re_img_yz = ResampleXYZAxis(imImage, space=(spacing[0], target_spacing[1], target_spacing[2]), interp=sitk.sitkBSpline)
+    re_lab_yz = ResampleLabelToRef(imLabel, re_img_yz, interp=sitk.sitkNearestNeighbor)
     
-    re_img_xyz = ResampleXYZAxis(re_img_xy, space=(target_spacing[0], target_spacing[1], target_spacing[2]), interp=sitk.sitkNearestNeighbor)
-    re_lab_xyz = ResampleLabelToRef(re_lab_xy, re_img_xyz, interp=sitk.sitkNearestNeighbor)
+    re_img_xyz = ResampleXYZAxis(re_img_yz, space=(target_spacing[0], target_spacing[1], target_spacing[2]), interp=sitk.sitkNearestNeighbor)
+    re_lab_xyz = ResampleLabelToRef(re_lab_yz, re_img_xyz, interp=sitk.sitkNearestNeighbor)
 
 
     
 
-    cropped_img, cropped_lab = CropForeground(re_img_xyz, re_lab_xyz, context_size=[40, 40, 10]) # z, y, x
+    cropped_img, cropped_lab = CropForeground(re_img_xyz, re_lab_xyz, context_size=[30, 30, 30]) # z, y, x
 
     sitk.WriteImage(cropped_img, '%s/%s.nii.gz'%(save_path, name))
     sitk.WriteImage(cropped_lab, '%s/%s_gt.nii.gz'%(save_path, name))
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
 
     src_path = '/research/cbim/medical/yg397/KiTS/kits19/data/'
-    tgt_path = '/research/cbim/medical/yg397/KiTS/kits/'
+    tgt_path = '/research/cbim/medical/yg397/KiTS/kits_3d/'
 
     
     name_list = []
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         img = sitk.ReadImage(src_path+f"case_00{name:03d}/imaging.nii.gz")
         lab = sitk.ReadImage(src_path+f"case_00{name:03d}/segmentation.nii.gz")
 
-        ResampleImage(img, lab, tgt_path, name, (3.0, 0.781625, 0.781625))
+        ResampleImage(img, lab, tgt_path, name, (0.781625, 0.781625, 0.781625))
         #ResampleImage(img, lab, tgt_path, name, (1, 1, 1))
         print(name, 'done')
 
