@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from . import metrics
 import numpy as np
 
-def calculate_distance(label_pred, label_true, spacing, C):
+def calculate_distance(label_pred, label_true, spacing, C, percentage=95):
     # the input args are torch tensors
     if label_pred.is_cuda:
         label_pred = label_pred.cpu()
@@ -22,7 +22,7 @@ def calculate_distance(label_pred, label_true, spacing, C):
         dis_gt_to_pred, dis_pred_to_gt = metrics.compute_average_surface_distance(tmp_surface)
         ASD_list[i] = (dis_gt_to_pred + dis_pred_to_gt) / 2 
 
-        HD = metrics.compute_robust_hausdorff(tmp_surface, 95)
+        HD = metrics.compute_robust_hausdorff(tmp_surface, percentage)
         HD_list[i] = HD
 
     return ASD_list, HD_list

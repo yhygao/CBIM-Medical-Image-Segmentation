@@ -10,7 +10,7 @@ import logging
 import pdb
 from utils import is_master
 from tqdm import tqdm
-
+import SimpleITK as sitk
 
 
 def validation(net, dataloader, args):
@@ -197,3 +197,5 @@ def validation_ddp(net, dataloader, args):
         out_HD_mean.append(np.array(out_HD[cls]).mean())
 
     return np.array(out_dice_mean), np.array(out_ASD_mean), np.array(out_HD_mean)
+
+

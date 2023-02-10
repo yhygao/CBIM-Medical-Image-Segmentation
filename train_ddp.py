@@ -112,18 +112,17 @@ def train_net(net, args, ema_net=None, fold_idx=0):
             if is_master(args):
                 log_evaluation_result(writer, dice_list_test, ASD_list_test, HD_list_test, 'test', epoch, args)
             
-            if dice_list_test.mean() >= best_Dice.mean():
-                best_Dice = dice_list_test
-                best_HD = HD_list_test
-                best_ASD = ASD_list_test
+                if dice_list_test.mean() >= best_Dice.mean():
+                    best_Dice = dice_list_test
+                    best_HD = HD_list_test
+                    best_ASD = ASD_list_test
 
-                torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                    torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
 
-            logging.info("Evaluation Done")
-            logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
+                logging.info("Evaluation Done")
+                logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
 
-        if is_master(args):
-            writer.add_scalar('LR', exp_scheduler, epoch+1)
+                writer.add_scalar('LR', exp_scheduler, epoch+1)
     
     return best_Dice, best_HD, best_ASD
 
@@ -276,7 +275,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         if hasattr(torch, "set_deterministic"):
             torch.set_deterministic(True)
         torch.backends.cudnn.benchmark = False
-        torch.backend.cudnn.deterministic = True
+        torch.backends.cudnn.deterministic = True
 
     # set process specific info
     args.proc_idx = proc_idx

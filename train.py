@@ -215,6 +215,16 @@ if __name__ == '__main__':
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     args.log_path = args.log_path + '%s/'%args.dataset
+
+    if args.reproduce_seed is not None:
+        random.seed(args.reproduce_seed)
+        np.random.seed(args.reproduce_seed)
+        torch.manual_seed(args.reproduce_seed)
+
+        if hasattr(torch, 'set_deterministic'):
+            torch.set_deterministic(True)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
    
     Dice_list, HD_list, ASD_list = [], [], []
 

@@ -7,6 +7,7 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
 
+- **Support KiTS19 dataset. (Feb. 10, 2023)**
 - **Support PyTorch DDP and AMP training. (Dec. 19. 2022)**
 - **Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)**
 - Supports for BCV and LiTS dataset have been updated.
@@ -34,6 +35,7 @@ Detail updates can be found in docs/change.md
 - [ACDC](https://www.creatis.insa-lyon.fr/Challenge/acdc/databases.html) Cardiac MRI
 - [BCV](https://www.synapse.org/#!Synapse:syn3193805/wiki/217789) Abdomen Organ CT
 - [LiTS](https://competitions.codalab.org/competitions/17094) Liver and Tumor CT
+- [KiTS19](https://github.com/neheller/kits19) Kidney and Tumor CT
 - More datasets are comming soon
 
 

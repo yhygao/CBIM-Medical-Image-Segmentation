@@ -68,4 +68,4 @@ port: 10000
 dist_url: 'tcp://localhost:10000' # make sure the port here is the same as in port
 dist_backend: "nccl"
 multiprocessing_distributed: true
-reproduce_seed: null
+reproduce_seed: 2023  # use any seed you want, or use 'null' to disable deterministic behavior
