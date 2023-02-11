@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import transforms
 import numpy as np
 import math
 import pdb
-
 
 # This is a PyTorch data augmentation library, that takes PyTorch Tensor as input
 # Functions can be applied in the __getitem__ function to do augmentation on the fly during training.
@@ -15,6 +15,53 @@ import pdb
 def gaussian_noise(tensor_img, std, mean=0):
     
     return tensor_img + torch.randn(tensor_img.shape).to(tensor_img.device) * std + mean
+
+def generate_2d_gaussian_kernel(kernel_size, sigma):
+    # Generate a meshgrid for the kernel
+    x = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=torch.float32)
+    y = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=torch.float32)
+    x, y = torch.meshgrid(x, y)
+
+    # Calculate the 2D Gaussian kernel
+    kernel = torch.exp(-(x ** 2 + y ** 2) / (2 * sigma ** 2))
+    kernel = kernel / (2 * math.pi * sigma ** 2)
+    kernel = kernel / kernel.sum()
+
+    return kernel.unsqueeze(0).unsqueeze(0)
+
+def generate_3d_gaussian_kernel(kernel_size, sigma):
+    # Generate a meshgrid for the kernel
+    x = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=torch.float32)
+    y = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=torch.float32)
+    z = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, dtype=torch.float32)
+    x, y, z = torch.meshgrid(x, y, z)
+
+    # Calculate the 3D Gaussian kernel
+    kernel = torch.exp(-(x ** 2 + y ** 2 + z ** 2) / (2 * sigma ** 2))
+    kernel = kernel / (2 * math.pi * sigma ** 2) ** 1.5
+    kernel = kernel / kernel.sum()
+
+    return kernel.unsqueeze(0).unsqueeze(0)
+
+def gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 2.0]):
+
+    sigma = 5#torch.rand(1) * (sigma_range[1] - sigma_range[0]) + sigma_range[0]
+    
+    if len(tensor_img.shape) == 5:
+        dim = '3d'
+        kernel = generate_3d_gaussian_kernel(kernel_size, sigma).to(tensor_img.device)
+        padding = [kernel_size // 2 for i in range(3)]
+
+        return F.conv3d(tensor_img, kernel, padding=padding)
+    elif len(tensor_img.shape) == 4:
+        dim = '2d'
+        kernel = generate_2d_gaussian_kernel(kernel_size, sigma).to(tensor_img.device)
+        padding = [kernel_size // 2 for i in range(2)]
+
+        return F.conv2d(tensor_img, kernel, padding=padding)
+    else:
+        raise ValueError('Invalid input tensor dimension, should be 5d for volume image or 4d for 2d image')
+
 
 def brightness_additive(tensor_img, std, mean=0, per_channel=False):
     
