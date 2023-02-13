@@ -20,7 +20,7 @@ def ResampleXYZAxis(imImage, space=(1., 1., 1.), interp=sitk.sitkLinear):
 
     return imOutImage
 
-def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkLinear):
+def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkNearestNeighbor):
     identity1 = sitk.Transform(3, sitk.sitkIdentity)
 
     imRefImage = sitk.Image(imRef.GetSize(), imLabel.GetPixelIDValue())
@@ -28,22 +28,9 @@ def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkLinear):
     imRefImage.SetOrigin(imRef.GetOrigin())
     imRefImage.SetDirection(imRef.GetDirection())
         
-    npLabel = sitk.GetArrayFromImage(imLabel)
-    labels = np.unique(npLabel)
-    resampled_nplabel_list = []
-    for idx in labels:
-        tmp_label = (npLabel == idx).astype(np.uint8)
-        tmp_imLabel = sitk.GetImageFromArray(tmp_label)
-        tmp_imLabel.CopyInformation(imLabel)
-        tmp_resampled_Label = sitk.Resample(tmp_imLabel, imRefImage, identity1, interp)
-        resampled_nplabel_list.append(sitk.GetArrayFromImage(tmp_resampled_Label))
+    ResampledLabel = sitk.Resample(imLabel, imRefImage, identity1, interp)
     
-    one_hot_resampled_label = np.stack(resampled_nplabel_list, axis=0)
-    resampled_label = np.argmax(one_hot_resampled_label, axis=0)
-    outLabel = sitk.GetImageFromArray(resampled_label.astype(np.uint8))
-    outLabel.CopyInformation(imRef)
-
-    return outLabel
+    return ResampledLabel
 
 
 def CropForeground(imImage, imLabel, context_size=[10, 30, 30]):
