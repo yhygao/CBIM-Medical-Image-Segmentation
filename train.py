@@ -119,7 +119,7 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
             plt.show()
         '''
         img = img.cuda(non_blocking=True)
-        label = label.cuda(non_blocking=True)
+        label = label.cuda(non_blocking=True).long()
         step = i + epoch * len(trainLoader) # global steps
     
         optimizer.zero_grad()

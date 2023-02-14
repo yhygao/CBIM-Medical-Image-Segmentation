@@ -117,7 +117,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                     best_HD = HD_list_test
                     best_ASD = ASD_list_test
 
-                    torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                    torch.save(net_for_eval.module.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
 
                 logging.info("Evaluation Done")
                 logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
@@ -153,7 +153,7 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
             plt.show()
         '''
         img = img.cuda(args.proc_idx, non_blocking=True)
-        label = label.cuda(args.proc_idx, non_blocking=True)
+        label = label.cuda(args.proc_idx, non_blocking=True).long()
         step = i + epoch * len(trainLoader) # global steps
         
         optimizer.zero_grad()

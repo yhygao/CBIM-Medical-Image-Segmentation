@@ -156,6 +156,6 @@ class LiverDataset(Dataset):
         assert tensor_img.shape == tensor_lab.shape
 
         if self.mode == 'train':
-            return tensor_img, tensor_lab
+            return tensor_img, tensor_lab.to(torch.int8)
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
