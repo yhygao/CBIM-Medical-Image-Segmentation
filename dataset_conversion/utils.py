@@ -33,6 +33,37 @@ def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkNearestNeighbor):
     return ResampledLabel
 
 
+
+def ITKReDirection(itkimg, target_direction=(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)):
+    # target direction should be orthognal, i.e. (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+
+    # permute axis
+    tmp_target_direction = np.abs(np.round(np.array(target_direction))).reshape(3,3).T
+    current_direction = np.abs(np.round(itkimg.GetDirection())).reshape(3,3).T
+    
+    permute_order = []
+    if not np.array_equal(tmp_target_direction, current_direction):
+        for i in range(3):
+            for j in range(3):
+                if np.array_equal(tmp_target_direction[i], current_direction[j]):
+                    permute_order.append(j)
+                    #print(i, j)
+                    #print(permute_order)
+                    break
+        redirect_img = sitk.PermuteAxes(itkimg, permute_order)
+    else:
+        redirect_img = itkimg
+    # flip axis
+    current_direction = np.round(np.array(redirect_img.GetDirection())).reshape(3,3).T
+    current_direction = np.max(current_direction, axis=1)
+
+    tmp_target_direction = np.array(target_direction).reshape(3,3).T 
+    tmp_target_direction = np.max(tmp_target_direction, axis=1)
+    flip_order = ((tmp_target_direction * current_direction) != 1)
+    fliped_img = sitk.Flip(redirect_img, [bool(flip_order[0]), bool(flip_order[1]), bool(flip_order[2])])
+    return fliped_img
+
+
 def CropForeground(imImage, imLabel, context_size=[10, 30, 30]):
     # the context_size is in numpy indice order: z, y, x
     # Note that SimpleITK use the indice order of: x, y, z
