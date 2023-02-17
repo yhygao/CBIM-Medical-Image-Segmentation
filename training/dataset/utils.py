@@ -28,3 +28,13 @@ def get_dataset(args, mode, **kwargs):
 
             return KidneyDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 
+        elif args.dataset == 'amos_ct':
+            from .dim3.dataset_amos_ct import AMOSDataset
+
+            return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+
+        elif args.dataset == 'amos_mr':
+            from .dim3.dataset_amos_mr import AMOSDataset
+
+            return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+

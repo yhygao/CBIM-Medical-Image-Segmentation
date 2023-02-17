@@ -16,7 +16,12 @@ from torch.utils.tensorboard import SummaryWriter
 from training.utils import update_ema_variables
 from training.losses import DiceLoss
 from training.validation import validation
-from training.utils import exp_lr_scheduler_with_warmup, log_evaluation_result, get_optimizer
+from training.utils import (
+    exp_lr_scheduler_with_warmup, 
+    log_evaluation_result, 
+    get_optimizer, 
+    filter_validation_results
+)
 import yaml
 import argparse
 import time
@@ -41,7 +46,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     ################################################################################
     # Dataset Creation
     trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=8)
+    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=8, persistent_workers=True)
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     testLoader = data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
@@ -54,7 +59,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
     optimizer = get_optimizer(args, net)
 
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda())
+    criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
     criterion_dl = DiceLoss()
 
     best_Dice = np.zeros(args.classes)
@@ -76,6 +81,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
+            dice_list_test, ASD_list_test, HD_list_test = filter_validation_results(dice_list_test, ASD_list_test, HD_list_test, args) # filter results for some dataset, e.g. amos_mr
             log_evaluation_result(writer, dice_list_test, ASD_list_test, HD_list_test, 'test', epoch, args)
             
             if dice_list_test.mean() >= best_Dice.mean():

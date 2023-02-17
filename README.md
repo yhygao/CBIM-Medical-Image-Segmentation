@@ -7,6 +7,8 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
 
+- **Support AMOS22 dataset. (Feb. 16, 2023)**
+- **Add results of each dataset trained with our repo: [Sheet](https://docs.google.com/spreadsheets/d/1f5JjMURX-HwdYETnRgZssWjf17mbnMfbVDe8aYYiLMY/edit?usp=sharing). (Feb. 16, 2023)**
 - **Support KiTS19 dataset. (Feb. 10, 2023)**
 - **Support PyTorch DDP and AMP training. (Dec. 19. 2022)**
 - **Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)**
@@ -36,6 +38,7 @@ Detail updates can be found in docs/change.md
 - [BCV](https://www.synapse.org/#!Synapse:syn3193805/wiki/217789) Abdomen Organ CT
 - [LiTS](https://competitions.codalab.org/competitions/17094) Liver and Tumor CT
 - [KiTS19](https://github.com/neheller/kits19) Kidney and Tumor CT
+- [AMOS22](https://amos22.grand-challenge.org/) Abdomen Organ CT and MR
 - More datasets are comming soon
 
 

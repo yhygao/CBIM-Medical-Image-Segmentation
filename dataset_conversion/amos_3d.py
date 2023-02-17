@@ -88,7 +88,7 @@ if __name__ == '__main__':
         img = sitk.ReadImage(src_path+f"imagesTr/amos_{name:04d}.nii.gz")
         lab = sitk.ReadImage(src_path+f"labelsTr/amos_{name:04d}.nii.gz")
 
-        ResampleImage(img, lab, ct_tgt_path, name, (1.5, 1.5, 5.0))
+        ResampleImage(img, lab, ct_tgt_path, name, (0.68825, 0.68825, 2.0))
         print(name, 'done')
     
     for name in mr_name_list:
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         img = sitk.ReadImage(src_path+f"imagesVa/amos_{name:04d}.nii.gz")
         lab = sitk.ReadImage(src_path+f"labelsVa/amos_{name:04d}.nii.gz")
 
-        ResampleImage(img, lab, ct_tgt_path, name, (1.5, 1.5, 5.0))
+        ResampleImage(img, lab, ct_tgt_path, name, (0.68825, 0.68825, 2.0))
         print(name, 'done')
     
     for name in mr_name_list:

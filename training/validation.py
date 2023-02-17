@@ -48,18 +48,20 @@ def validation(net, dataloader, args):
             else:
                 label_pred = label_pred.squeeze(0)
                 labels = labels.squeeze(0).squeeze(0)
-                
+               
 
             tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
-            # comment this for fast debugging (HD and ASD computation for large 3D image is slow)
+            # comment this for fast debugging (HD and ASD computation for large 3D images is slow)
             #tmp_ASD_list = np.zeros(args.classes-1)
             #tmp_HD_list = np.zeros(args.classes-1)
 
             tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
             tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
+        
+            # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM. Put tensors to cpu if needed.
+            #dice, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
+            dice, _, _ = calculate_dice(label_pred.view(-1, 1).cpu(), labels.view(-1, 1).cpu(), args.classes)
 
-            dice, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
-            
             # exclude background
             dice = dice.cpu().numpy()[1:]
 
@@ -128,7 +130,11 @@ def validation_ddp(net, dataloader, args):
             tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
             tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
 
+            # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM. Put tensors to cpu if needed.
             tmp_dice_list, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
+            #tmp_dice_list, _, _ = calculate_dice(label_pred.view(-1, 1).cpu(), labels.view(-1, 1).cpu(), args.classes)
+
+
             labels = labels.cpu().numpy()
             unique_labels = np.unique(labels)
             unique_labels =  np.pad(unique_labels, (100-len(unique_labels), 0), 'constant', constant_values=0)

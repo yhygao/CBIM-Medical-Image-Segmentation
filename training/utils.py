@@ -15,16 +15,24 @@ def get_optimizer(args, net):
 
 
 def log_evaluation_result(writer, dice_list, ASD_list, HD_list, name, epoch, args):
-    
+    C = dice_list.shape[0]
+
     writer.add_scalar('Dice/%s_AVG'%name, dice_list.mean(), epoch+1)
-    for idx in range(args.classes-1):
+    for idx in range(C):
         writer.add_scalar('Dice/%s_Dice%d'%(name, idx+1), dice_list[idx], epoch+1)
     writer.add_scalar('ASD/%s_AVG'%name, ASD_list.mean(), epoch+1)
-    for idx in range(args.classes-1):
+    for idx in range(C):
         writer.add_scalar('ASD/%s_ASD%d'%(name, idx+1), ASD_list[idx], epoch+1)
     writer.add_scalar('HD/%s_AVG'%name, HD_list.mean(), epoch+1)
-    for idx in range(args.classes-1):
+    for idx in range(C):
         writer.add_scalar('HD/%s_HD%d'%(name, idx+1), HD_list[idx], epoch+1)
+
+def filter_validation_results(dice_list, ASD_list, HD_list, args):
+    if args.dataset == 'amos_mr':
+        # the validation set of amos_mr doesn't have the last two organs, so elimiate them
+        dice_list, ASD_list, HD_list = dice_list[:-2], ASD_list[:-2], HD_list[:-2]
+
+    return dice_list, ASD_list, HD_list
 
 def multistep_lr_scheduler_with_warmup(optimizer, init_lr, epoch, warmup_epoch, lr_decay_epoch, max_epoch, gamma=0.1):
 

@@ -49,26 +49,22 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 
 
-def train_net(net, args, ema_net=None, fold_idx=0):
+def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     
     ########################################################################################
     # Dataset Creation
     
-    trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    train_sampler = DistributedSampler(trainset) if args.distributed else None
 
     trainLoader = data.DataLoader(
         trainset, 
         batch_size=args.batch_size, 
-        shuffle=(train_sampler is None),
-        sampler=train_sampler,
+        shuffle=True,
         pin_memory=True,
         num_workers=args.num_workers,
         persistent_workers=True,
     )
     
     
-    testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     test_sampler = DistributedSampler(testset) if args.distributed else None
     testLoader = data.DataLoader(
         testset,
@@ -99,8 +95,6 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     best_ASD = np.ones(args.classes) * 1000
     
     for epoch in range(args.epochs):
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
 
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
@@ -271,7 +265,7 @@ def init_network(args):
 
 
 
-def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
+def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None, trainset=None, testset=None):
     # seed each process
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)
@@ -345,7 +339,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
 
 
     logging.info(f"Created Model")
-    best_Dice, best_HD, best_ASD = train_net(net, args, ema_net, fold_idx=fold_idx)
+    best_Dice, best_HD, best_ASD = train_net(net, trainset, testset, args, ema_net, fold_idx=fold_idx)
     
     logging.info(f"Training and evaluation on Fold {fold_idx} is done")
     
@@ -391,9 +385,11 @@ if __name__ == '__main__':
                 # Since we have ngpus_per_node processes per node, the total world_size
                 # needs to be adjusted accordingly
                 args.world_size = ngpus_per_node * args.world_size
+                trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+                testset = get_dataset(args, mode='test', fold_idx=fold_idx)
                 # Use torch.multiprocessing.spawn to launch distributed processes:
                 # the main_worker process function
-                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict))
+                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict, trainset, testset))
                 best_Dice = result_dict['best_Dice']
                 best_HD = result_dict['best_HD']
                 best_ASD = result_dict['best_ASD']
