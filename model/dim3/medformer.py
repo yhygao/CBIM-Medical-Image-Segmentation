@@ -10,8 +10,28 @@ import pdb
 
 class MedFormer(nn.Module):
     
-    def __init__(self, in_chan, num_classes, base_chan=32, map_size=[4,8,8], 
-        conv_block='BasicBlock', conv_num=[2,1,0,0, 0,1,2,2], trans_num=[0,1,2,2, 2,1,0,0], chan_num=[64,128,256,320,256,128,64,32], num_heads=[1,4,8,16, 8,4,1,1], fusion_depth=2, fusion_dim=320, fusion_heads=4, expansion=4, attn_drop=0., proj_drop=0., proj_type='depthwise', norm='in', act='gelu', kernel_size=[3,3,3,3], scale=[2,2,2,2], aux_loss=False):
+    def __init__(self, 
+        in_chan, 
+        num_classes, 
+        base_chan=32, 
+        map_size=[4,8,8], 
+        conv_block='BasicBlock', 
+        conv_num=[2,1,0,0, 0,1,2,2], 
+        trans_num=[0,1,2,2, 2,1,0,0], 
+        chan_num=[64,128,256,320,256,128,64,32], 
+        num_heads=[1,4,8,16, 8,4,1,1], 
+        fusion_depth=2, 
+        fusion_dim=320, 
+        fusion_heads=4, 
+        expansion=4, attn_drop=0., 
+        proj_drop=0., 
+        proj_type='depthwise', 
+        norm='in', 
+        act='gelu', 
+        kernel_size=[3,3,3,3], 
+        scale=[2,2,2,2], 
+        aux_loss=False
+        ):
         super().__init__()
 
         if conv_block == 'BasicBlock':

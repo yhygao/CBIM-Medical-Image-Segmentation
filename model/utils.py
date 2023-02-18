@@ -106,7 +106,16 @@ def get_model(args, pretrain=False):
             if pretrain:
                 model.load_from(args)
             return model
-    
+        elif args.model == 'swin_unetr':
+            from .dim3 import SwinUNETR()
+            model = SwinUNETR(args.window_size, args.in_chan, args.classes)
+
+            return model
+        elif args.model == 'nnformer':
+            from .dim3 import nnFormer
+            model = nnFormer(args.window_size, input_channels=args.in_chan, num_classes=args.classes)
+
+            return model
     else:
         raise ValueError('Invalid dimension, should be \'2d\' or \'3d\'')
 
