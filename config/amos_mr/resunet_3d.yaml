@@ -23,12 +23,12 @@ split_seed: 0
 k_fold: 1
 
 optimizer: adamw
-base_lr: 0.0004
+base_lr: 0.0006
 warmup_epoch: 5
 momentum: 0.99
 betas: [0.9, 0.999]
 weight_decay: 0.0005  # weight decay of the optimizer
-weight: [1, 1, 1, 1, 1, 1.5, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1]  # weitght of each class in the loss function
+weight: [0.5, 1, 1, 1, 1, 1.5, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3

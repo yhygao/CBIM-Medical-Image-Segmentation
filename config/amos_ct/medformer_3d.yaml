@@ -30,7 +30,7 @@ proj_type: 'depthwise'
 
 #TRAIN
 epochs: 300
-training_size: [96, 96, 96] # training crop size
+training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 4
 aux_loss: True
@@ -40,10 +40,10 @@ split_seed: 0
 k_fold: 1
 
 optimizer: adamw
-base_lr: 0.0004
+base_lr: 0.0006
 betas: [0.9, 0.999]
-weight_decay: 0.05  # weight decay of the optimizer
-weight: [1, 1, 1, 1, 1, 1.5, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1]
+weight_decay: 0.0005  # weight decay of the optimizer
+weight: [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 rlt: 1 # relation between CE and Dice loss
 
 
@@ -67,7 +67,7 @@ val_freq: 10
 
 #INFERENCE
 sliding_window: True
-window_size: [96, 96, 96]
+window_size: [128, 128, 128]
 
 
 # DDP
