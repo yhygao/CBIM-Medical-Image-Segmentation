@@ -134,6 +134,8 @@ class AMOSDataset(Dataset):
                 tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
             if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 1.0])
 
 
             
@@ -147,7 +149,6 @@ class AMOSDataset(Dataset):
             else:
                  tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
                
-
         tensor_img = tensor_img.squeeze(0)
         tensor_lab = tensor_lab.squeeze(0)
 

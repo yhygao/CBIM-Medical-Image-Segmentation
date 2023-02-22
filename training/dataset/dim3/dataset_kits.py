@@ -136,6 +136,8 @@ class KidneyDataset(Dataset):
             if np.random.random() < 0.3:
                 tensor_img = augmentation.mirror(tensor_img, axis=0)
                 tensor_lab = augmentation.mirror(tensor_lab, axis=0)
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 1.0])
 
 
             

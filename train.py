@@ -46,10 +46,10 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     ################################################################################
     # Dataset Creation
     trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=8, persistent_workers=True)
+    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=8, persistent_workers=True)
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
-    testLoader = data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+    testLoader = data.DataLoader(testset, batch_size=1, pin_memory=True, shuffle=False, num_workers=2)
     
     logging.info(f"Created Dataset and DataLoader")
 
@@ -124,6 +124,7 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
 
             plt.show()
         '''
+        
         img = img.cuda(non_blocking=True)
         label = label.cuda(non_blocking=True).long()
         step = i + epoch * len(trainLoader) # global steps

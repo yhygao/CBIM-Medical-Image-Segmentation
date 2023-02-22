@@ -14,7 +14,7 @@ block: BasicBlock
 norm: in
 
 #TRAIN
-epochs: 300
+epochs: 200
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 4
@@ -27,8 +27,8 @@ base_lr: 0.0006
 warmup_epoch: 5
 momentum: 0.99
 betas: [0.9, 0.999]
-weight_decay: 0.0005  # weight decay of the optimizer
-weight: [0.5, 1, 1, 1, 1, 1.5, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1]  # weitght of each class in the loss function
+weight_decay: 0.05  # weight decay of the optimizer
+weight: [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
@@ -43,7 +43,7 @@ iter_per_epoch: 80
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 1
+val_freq: 40
 
 
 
@@ -59,7 +59,7 @@ world_size: 1
 proc_idx: 0
 rank: 0
 port: 10000
-dist_url: 'tcp://localhost:10001' # the port number here should be the same as the previous one
+dist_url: 'tcp://localhost:10008' # the port number here should be the same as the previous one
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null

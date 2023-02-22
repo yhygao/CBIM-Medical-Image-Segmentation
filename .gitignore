@@ -9,3 +9,4 @@ initmodel/
 result/
 *.swp
 prediction.py
+test.py

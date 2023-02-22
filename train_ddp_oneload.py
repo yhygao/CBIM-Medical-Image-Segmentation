@@ -395,8 +395,10 @@ if __name__ == '__main__':
                 best_ASD = result_dict['best_ASD']
             args.world_size = 1
         else:
+            trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+            testset = get_dataset(args, mode='test', fold_idx=fold_idx)
             # Simply call main_worker function
-            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args)
+            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args, trainset=trainset, testset=testset)
 
 
 

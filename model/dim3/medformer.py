@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .utils import get_block, get_norm, get_act
-from .medformer_utils import down_block, up_block, inconv, SemanticMapFusion
+from .medformer_utils_v2 import down_block, up_block, inconv, SemanticMapFusion
 import pdb
 
 

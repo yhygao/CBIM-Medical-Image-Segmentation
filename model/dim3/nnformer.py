@@ -1,11 +1,11 @@
 from einops import rearrange
 from copy import deepcopy
-from nnformer_utils import softmax_helper
+from .nnformer_utils import softmax_helper
 from torch import nn
 import torch
 import numpy as np
-from nnformer_utils import InitWeights_He
-from nnformer_utils import SegmentationNetwork
+from .nnformer_utils import InitWeights_He
+from .nnformer_utils import SegmentationNetwork
 import torch.nn.functional
 
 
@@ -946,7 +946,7 @@ class nnFormer(SegmentationNetwork):
             
         if self.do_ds:
             for i in range(len(out)):  
-                seg_outputs.append(self.final[-(i+1)](out[i]))
+                seg_outputs.append(F.interpolate(self.final[-(i+1)](out[i]), size=x.shape[-3:], mode='trilinear', align_corners=True))
         
           
             return seg_outputs[::-1]
