@@ -164,3 +164,13 @@ class CMRDataset(Dataset):
         croped_lab = label[:, rand_x:rand_x+self.args.training_size[1], rand_y:rand_y+self.args.training_size[1]]
 
         return croped_img, croped_lab
+
+    def getitem_dali(self, idx):
+        
+        tensor_img = self.img_slice_list[idx]
+        tensor_lab = self.lab_slice_list[idx]
+
+        tensor_img = tensor_img.unsqueeze(2).float() # HWC
+        tensor_lab = tensor_lab.unsqueeze(2).to(torch.int32) # HWC
+
+        return tensor_img, tensor_lab

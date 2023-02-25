@@ -9,7 +9,12 @@ import yaml
 import math
 import random
 import pdb
-from training import augmentation
+from training import augmentation, augmentation_dali
+from training.dataset.utils import DALIInputCallable
+from nvidia.dali import pipeline_def
+import nvidia.dali.fn as fn
+import nvidia.dali.types as types
+import os
 
 class AMOSDataset(Dataset):
     def __init__(self, args, mode='train', k_fold=5, k=0, seed=0):
@@ -31,10 +36,12 @@ class AMOSDataset(Dataset):
         
         if mode == 'train':
             #img_name_list = train_name_list[:4]
-            pass
+            #pass
+            img_name_list = img_name_list[:4]
         else:
             #img_name_list = test_name_list[:4]
             img_name_list = [553, 575, 598, 559, 547, 563, 549, 545, 573, 561, 552, 568, 576, 550, 562, 546, 572, 556, 544, 581]
+            img_name_list = img_name_list[:4]
 
         
         print('Start loading %s data'%self.mode)
@@ -86,17 +93,18 @@ class AMOSDataset(Dataset):
 
         z, y, x = img.shape
         
-        # pad if the image size is smaller than trainig size
-        if z < self.args.training_size[0]:
-            diff = int(math.ceil((self.args.training_size[0] - z) / 2))
+        # pad if the image size is smaller than trainig+pad size
+        pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
+        if z < pad_size[0]:
+            diff = int(math.ceil((pad_size[0] - z) / 2))
             img = np.pad(img, ((diff, diff), (0,0), (0,0)))
             lab = np.pad(lab, ((diff, diff), (0,0), (0,0)))
-        if y < self.args.training_size[1]:
-            diff = int(math.ceil((self.args.training_size[1]+2 - y) / 2))
+        if y < pad_size[1]:
+            diff = int(math.ceil((pad_size[1] - y) / 2))
             img = np.pad(img, ((0,0), (diff,diff), (0,0)))
             lab = np.pad(lab, ((0,0), (diff, diff), (0,0)))
-        if x < self.args.training_size[2]:
-            diff = int(math.ceil((self.args.training_size[2]+2 - x) / 2))
+        if x < pad_size[2]:
+            diff = int(math.ceil((pad_size[2] - x) / 2))
             img = np.pad(img, ((0,0), (0,0), (diff, diff)))
             lab = np.pad(lab, ((0,0), (0,0), (diff, diff)))
 
@@ -113,6 +121,7 @@ class AMOSDataset(Dataset):
         
         tensor_img = self.img_list[idx]
         tensor_lab = self.lab_list[idx]
+        
 
         tensor_img = tensor_img.unsqueeze(0).unsqueeze(0)
         tensor_lab = tensor_lab.unsqueeze(0).unsqueeze(0)
@@ -122,28 +131,28 @@ class AMOSDataset(Dataset):
         if self.mode == 'train':
             
             d, h, w = self.args.training_size
-
+            '''
             # Gaussian Noise
-            if np.random.random() < 0.15:
+            if np.random.random() < 1: #0.15
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
 
-            if np.random.random() < 0.2:
+            if np.random.random() < 1: #0.2
                 tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
-            if np.random.random() < 0.2:
+            if np.random.random() < 1:
                 tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
-            if np.random.random() < 0.2:
+            if np.random.random() < 1:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
-            if np.random.random() < 0.2:
+            if np.random.random() < 1:
                 tensor_img = augmentation.gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 1.0])
 
 
-            
-            if np.random.random() < 0.2:
+            '''
+            if np.random.random() < 1: # 0.2
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+70, h+70, w+70], mode='random')
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')#[d+70, h+70, w+70], mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
@@ -158,3 +167,37 @@ class AMOSDataset(Dataset):
             return tensor_img, tensor_lab.to(torch.int8)
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
+
+
+
+    def getitem_dali(self, idx):
+        
+        tensor_img = self.img_list[idx]
+        tensor_lab = self.lab_list[idx]
+
+
+        tensor_img = tensor_img.unsqueeze(3).float() # DHWC
+        tensor_lab = tensor_lab.unsqueeze(3).to(torch.int32) # DHWC
+        # cuda or not depends on the device, if gpu, and parallel is true, then no_copy is true, need to be cuda
+        # else is fine on cpu
+        if self.args.aug_device == 'cpu':
+            return tensor_img, tensor_lab
+        elif self.args.aug_device == 'gpu':
+            return tensor_img.cuda(self.args.proc_idx), tensor_lab.cuda(self.args.proc_idx)
+    
+    #@staticmethod
+    @pipeline_def
+    def dali_pipeline(self, dataset, bs, device='cpu'):
+        img, lab = fn.external_source(source=DALIInputCallable(dataset, bs), num_outputs=2, batch=False,
+                layout=['DHWC', 'DHWC'], dtype=[types.FLOAT, types.INT32], parallel=True, device=device)
+        img = augmentation_dali.brightness(img, p=1)
+        img = augmentation_dali.contrast(img, p=1)
+        img = augmentation_dali.gaussian_blur(img, p=1)
+        img = augmentation_dali.gaussian_noise(img, std=0.1, p=1)
+        
+        img, lab = augmentation_dali.random_affine_crop_3d(img, lab, p=1, window_size=self.args.training_size, pad_size=self.args.affine_pad_size)
+        
+        img = fn.crop_mirror_normalize(img, output_layout='CDHW')
+        lab = fn.crop_mirror_normalize(lab, output_layout='CDHW')
+
+        return img, lab 

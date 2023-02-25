@@ -29,7 +29,7 @@ proj_type: 'depthwise'
 
 
 #TRAIN
-epochs: 300
+epochs: 200
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 4

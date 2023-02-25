@@ -224,7 +224,7 @@ def random_scale_rotate_translate_2d(tensor_img, tensor_lab, scale, rotate, tran
 
     return tensor_img, tensor_lab
 
-def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale, rotate, translate, noshear=True):
+def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale=0.3, rotate=45, translate=0.1, shear=0.1):
     '''
     The axis order of SimpleITK is x,y,z
     The axis order of numpy/tensor is z,y,x
@@ -238,31 +238,35 @@ def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale, rotate, tran
         translate = [translate] * 3
     if isinstance(rotate, float) or isinstance(rotate, int):
         rotate = [rotate] * 3
+    if isinstance(shear, float) or isinstance(shear, int):
+        shear = [shear] * 3
 
-    scale_x = 1 - scale[0] + np.random.random() * 2*scale[0]
-    scale_y = 1 - scale[1] + np.random.random() * 2*scale[1]
-    scale_z = 1 - scale[2] + np.random.random() * 2*scale[2]
-    shear_yx = 0 if noshear else np.random.random() * 2*scale[0] - scale[0] # contribution of y index to x axis
-    shear_zx = 0 if noshear else np.random.random() * 2*scale[0] - scale[0] # contribution of z index to x axis
-    shear_xy = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
-    shear_zy = 0 if noshear else np.random.random() * 2*scale[1] - scale[1]
-    shear_xz = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
-    shear_yz = 0 if noshear else np.random.random() * 2*scale[2] - scale[2]
-    translate_x = np.random.random() * 2*translate[0] - translate[0]
-    translate_y = np.random.random() * 2*translate[1] - translate[1]
-    translate_z = np.random.random() * 2*translate[2] - translate[2]
+    scale_x = np.random.uniform(low=1-scale[0], high=1/(1-scale[0]))
+    scale_y = np.random.uniform(low=1-scale[1], high=1/(1-scale[1]))
+    scale_z = np.random.uniform(low=1-scale[2], high=1/(1-scale[2]))
+
+    shear_xy = np.random.uniform(-shear[0], shear[0]) # contribution of y index to x axis
+    shear_xz = np.random.uniform(-shear[0], shear[0]) # contribution of z index to x axis
+    shear_yx = np.random.uniform(-shear[1], shear[1]) # contribution of x index to y axis
+    shear_yz = np.random.uniform(-shear[1], shear[1]) # contribution of z index to y axis
+    shear_zx = np.random.uniform(-shear[2], shear[2]) # contribution of x index to z axis
+    shear_zy = np.random.uniform(-shear[2], shear[2]) # contribution of y index to z axis
+
+    translate_x = np.random.uniform(-translate[0], translate[0])
+    translate_y = np.random.uniform(-translate[1], translate[1])
+    translate_z = np.random.uniform(-translate[2], translate[2])
 
 
-    theta_scale = torch.tensor([[scale_x, shear_yx, shear_zx, translate_x],
-                                [shear_xy, scale_y, shear_zy, translate_y],
-                                [shear_xz, shear_yz, scale_z, translate_z], 
+    theta_scale = torch.tensor([[scale_x, shear_xy, shear_xz, translate_x],
+                                [shear_yx, scale_y, shear_yz, translate_y],
+                                [shear_zx, shear_zy, scale_z, translate_z], 
                                 [0, 0, 0, 1]]).float()
     angle_x = (float(np.random.randint(-rotate[0], max(rotate[0], 1))) / 180.) * math.pi 
-    # rotate along z axis (z index fix, rotae in xy plane)
+    # rotate along x axis (x index fix, rotae in yz plane)
     angle_y = (float(np.random.randint(-rotate[1], max(rotate[1], 1))) / 180.) * math.pi
     # rotate along y axis (y index fix, rotate in xz plane)
     angle_z = (float(np.random.randint(-rotate[2], max(rotate[2], 1))) / 180.) * math.pi
-    # rotate along x axis (x index fix, rotate in yz plane)
+    # rotate along z axis (z index fix, rotate in xy plane)
     
     theta_rotate_x = torch.tensor([[1, 0, 0, 0],
                                     [0, math.cos(angle_x), -math.sin(angle_x), 0],
@@ -279,8 +283,8 @@ def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale, rotate, tran
 
     theta = torch.mm(theta_rotate_x, theta_rotate_y)
     theta = torch.mm(theta, theta_rotate_z)
-    theta = torch.mm(theta, theta_scale)[0:3, :].unsqueeze(0)
     
+    theta = torch.mm(theta, theta_scale)[0:3, :].unsqueeze(0)
     grid = F.affine_grid(theta, tensor_img.size(), align_corners=True)
     tensor_img = F.grid_sample(tensor_img, grid, mode='bilinear', padding_mode='zeros', align_corners=True)
     tensor_lab = F.grid_sample(tensor_lab.float(), grid, mode='nearest', padding_mode='zeros', align_corners=True).long()

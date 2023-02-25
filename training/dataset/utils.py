@@ -38,3 +38,20 @@ def get_dataset(args, mode, **kwargs):
 
             return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 
+
+
+class DALIInputCallable(object):
+    def __init__(self, dataset, bs):
+        self.dataset = dataset
+        self.batch_size = bs
+
+        self.full_iterations = len(self.dataset) // self.batch_size
+
+    def __call__(self, sample_info):
+        sample_idx = sample_info.idx_in_epoch
+        if sample_info.iteration >= self.full_iterations:
+            raise StopIteration()
+
+        img, lab = self.dataset.getitem_dali(sample_idx)
+
+        return img, lab

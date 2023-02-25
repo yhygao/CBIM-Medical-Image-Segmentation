@@ -17,7 +17,7 @@ norm: in
 epochs: 150
 training_size: [32, 128, 128] # training crop size
 start_epoch: 0
-num_workers: 2
+num_workers: 8
 
 split_seed: 0
 k_fold: 5
