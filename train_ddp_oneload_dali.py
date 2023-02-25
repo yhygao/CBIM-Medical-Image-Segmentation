@@ -65,8 +65,10 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
             persistent_workers=True,
         )
     elif args.dataloader == 'dali':
+        print('world size', args.world_size)
         call_pipe = trainset.dali_pipeline(dataset=trainset, bs=args.batch_size, device=args.aug_device, batch_size=args.batch_size, 
-            num_threads=args.num_threads, device_id=args.proc_idx, py_num_workers=0, py_start_method='spawn')
+            num_threads=args.num_threads, device_id=args.proc_idx, shard_id=args.proc_idx, num_shards=args.world_size,
+            py_num_workers=0, py_start_method='spawn')
         call_pipe.build()
 
         trainLoader = DALIGenericIterator(call_pipe, ['data', 'label'], size=len(trainset))

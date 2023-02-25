@@ -131,28 +131,27 @@ class AMOSDataset(Dataset):
         if self.mode == 'train':
             
             d, h, w = self.args.training_size
-            '''
             # Gaussian Noise
-            if np.random.random() < 1: #0.15
+            if np.random.random() < 0.15:
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
 
-            if np.random.random() < 1: #0.2
+            if np.random.random() < 0.2: 
                 tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
-            if np.random.random() < 1:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
-            if np.random.random() < 1:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
-            if np.random.random() < 1:
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 1.0])
 
 
-            '''
-            if np.random.random() < 1: # 0.2
+            if np.random.random() < 0.2:
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')#[d+70, h+70, w+70], mode='random')
+                pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, pad_size, mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
@@ -172,6 +171,9 @@ class AMOSDataset(Dataset):
 
     def getitem_dali(self, idx):
         
+        print(self.args.proc_idx, os.getpid(), idx)
+        idx = idx % len(self.img_list)
+        
         tensor_img = self.img_list[idx]
         tensor_lab = self.lab_list[idx]
 
@@ -187,15 +189,16 @@ class AMOSDataset(Dataset):
     
     #@staticmethod
     @pipeline_def
-    def dali_pipeline(self, dataset, bs, device='cpu'):
-        img, lab = fn.external_source(source=DALIInputCallable(dataset, bs), num_outputs=2, batch=False,
+    def dali_pipeline(self, dataset, bs, device='cpu', shard_id=0, num_shards=1):
+        # need to add gamma, and pass arguments into affine
+        img, lab = fn.external_source(source=DALIInputCallable(dataset, bs, shard_id, num_shards), num_outputs=2, batch=False,
                 layout=['DHWC', 'DHWC'], dtype=[types.FLOAT, types.INT32], parallel=True, device=device)
-        img = augmentation_dali.brightness(img, p=1)
-        img = augmentation_dali.contrast(img, p=1)
-        img = augmentation_dali.gaussian_blur(img, p=1)
-        img = augmentation_dali.gaussian_noise(img, std=0.1, p=1)
+        img = augmentation_dali.brightness(img, additive_range=(-0.1, 0.1), multiply_range=(0.7, 1.3), p=0.2)
+        img = augmentation_dali.contrast(img, contrast_range=(0.65, 1.5), p=0.2)
+        img = augmentation_dali.gaussian_blur(img, sigma_range=(0.5, 1.0), p=0.2)
+        img = augmentation_dali.gaussian_noise(img, std=0.1, p=0.2)
         
-        img, lab = augmentation_dali.random_affine_crop_3d(img, lab, p=1, window_size=self.args.training_size, pad_size=self.args.affine_pad_size)
+        img, lab = augmentation_dali.random_affine_crop_3d(img, lab, p=0.2, window_size=self.args.training_size, pad_size=self.args.affine_pad_size)
         
         img = fn.crop_mirror_normalize(img, output_layout='CDHW')
         lab = fn.crop_mirror_normalize(lab, output_layout='CDHW')

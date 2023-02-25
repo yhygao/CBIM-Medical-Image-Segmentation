@@ -19,8 +19,7 @@ def random_augmentation_twoinputs(probability, augmented_img, original_img, augm
 
 
 def gaussian_noise(img, std, mean=0, p=0.5):
-    img_noised = img + fn.random.normal(img, stddev=fn.random.uniform(range=(0.0, std)))
-    img_noise = img + fn.random.normal(img, stddev=3)
+    img_noised = img + fn.random.normal(img, stddev=fn.random.uniform(range=(0.0, std))) + mean
     return random_augmentation(p, img_noised, img)
 
 def gaussian_blur(img, sigma_range=(0.5, 2.0), p=0.5):
