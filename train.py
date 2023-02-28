@@ -38,6 +38,13 @@ from utils import (
     AverageMeter,
     ProgressMeter,
 )
+
+import types
+import collections
+from random import shuffle
+
+from nvidia.dali.plugin.pytorch import DALIGenericIterator
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -46,7 +53,29 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     ################################################################################
     # Dataset Creation
     trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=8, persistent_workers=True)
+    
+    if args.dataloader == 'pytorch':
+        trainLoader = data.DataLoader(
+            trainset, 
+            batch_size=args.batch_size,
+            shuffle=True, 
+            pin_memory=(args.aug_device != 'gpu'), 
+            num_workers=args.num_workers, 
+            persistent_workers=(args.num_workers>0)
+        )
+    elif args.dataloader == 'dali':
+        call_pipe = trainset.dali_pipeline(
+            dataset=trainset, 
+            bs=args.batch_size, 
+            device=args.aug_device, 
+            batch_size=args.batch_size, 
+            num_threads=args.num_threads, 
+            device_id=0, 
+            py_num_workers=0, 
+            py_start_method='spawn')
+        call_pipe.build()
+    
+        trainLoader = DALIGenericIterator(call_pipe, ['data', 'label'], size=len(trainset))
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     testLoader = data.DataLoader(testset, batch_size=1, pin_memory=True, shuffle=False, num_workers=2)
@@ -112,21 +141,45 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
 
     tic = time.time()
     iter_num_per_epoch = 0 
-    for i, (img, label) in enumerate(trainLoader):
-    
-        ''' 
-        # uncomment this for visualize the input images and labels for debug
-        for idx in range(img.shape[0]):
-            plt.subplot(1,2,1)
-            plt.imshow(img[idx, 0, 40, :, :].numpy())
-            plt.subplot(1,2,2)
-            plt.imshow(label[idx, 0, 40, :, :].numpy())
+    for i, inputs in enumerate(trainLoader):
+        if args.dataloader == 'pytorch':
+            img, label = inputs[0], inputs[1].long()
+            if args.aug_device != 'gpu':
+                img = img.cuda(non_blocking=True)
+                label = label.cuda(non_blocking=True)
 
-            plt.show()
-        '''
+        elif args.dataloader == 'dali':
+            img, label = inputs[0]["data"], inputs[0]["label"]
+            img = img.cuda()
+            label = label.cuda().long()
         
-        img = img.cuda(non_blocking=True)
-        label = label.cuda(non_blocking=True).long()
+    
+        # uncomment this for visualize the input images and labels for debug
+        '''
+        img = img.cpu()
+        print(img.mean())
+        label = label.cpu()
+        for idx in range(img.shape[0]):
+            plt.subplot(3,2,1)
+            plt.imshow(img[idx, 0, 64, :, :].numpy())
+            plt.subplot(3,2,2)
+            plt.imshow(label[idx, 0, 64, :, :].numpy())
+            
+            plt.subplot(3,2,3)
+            plt.imshow(img[idx, 0, :, 64, :].cpu().numpy())
+            plt.subplot(3,2,4)
+            plt.imshow(label[idx, 0, :, 64, :].numpy())
+            
+            plt.subplot(3,2,5)
+            plt.imshow(img[idx, 0, :, :, 64].cpu().numpy())
+            plt.subplot(3,2,6)
+            plt.imshow(label[idx, 0, :, :, 64].numpy())
+           
+
+            plt.savefig('./result/PtranslateX_idx%d.png'%idx)
+
+            #plt.show()
+        '''
         step = i + epoch * len(trainLoader) # global steps
     
         optimizer.zero_grad()
@@ -175,6 +228,7 @@ def get_parser():
     parser.add_argument('--pretrain', action='store_true', help='if use pretrained weight for init')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--dataloader', default='pytorch', type=str, help='use pytorch or DALI loader')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='checkpoint path')
     parser.add_argument('--log_path', type=str, default='./log/', help='log path')
@@ -221,7 +275,9 @@ if __name__ == '__main__':
     
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    torch.multiprocessing.set_start_method('spawn')
     args.log_path = args.log_path + '%s/'%args.dataset
+    
 
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)

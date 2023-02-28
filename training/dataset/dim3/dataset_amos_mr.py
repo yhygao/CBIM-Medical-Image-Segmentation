@@ -127,8 +127,10 @@ class AMOSDataset(Dataset):
         tensor_lab = tensor_lab.unsqueeze(0).unsqueeze(0)
         # 1, C, D, H, W
 
-
         if self.mode == 'train':
+            if self.args.aug_device == 'gpu':
+                tensor_img = tensor_img.cuda(self.args.proc_idx)
+                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
             
             d, h, w = self.args.training_size
             # Gaussian Noise
@@ -159,11 +161,10 @@ class AMOSDataset(Dataset):
                
         tensor_img = tensor_img.squeeze(0)
         tensor_lab = tensor_lab.squeeze(0)
-
         assert tensor_img.shape == tensor_lab.shape
 
         if self.mode == 'train':
-            return tensor_img, tensor_lab.to(torch.int8)
+            return tensor_img, tensor_lab
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
 
@@ -171,7 +172,7 @@ class AMOSDataset(Dataset):
 
     def getitem_dali(self, idx):
         
-        print(self.args.proc_idx, os.getpid(), idx)
+        #print(self.args.proc_idx, os.getpid(), idx)
         idx = idx % len(self.img_list)
         
         tensor_img = self.img_list[idx]

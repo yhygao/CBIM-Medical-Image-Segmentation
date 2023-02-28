@@ -37,6 +37,8 @@ import warnings
 import matplotlib.pyplot as plt
 import copy
 
+from nvidia.dali.plugin.pytorch import DALIGenericIterator
+
 from utils import (
     configure_logger,
     save_configure,
@@ -49,26 +51,39 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 
 
-def train_net(net, args, ema_net=None, fold_idx=0):
+def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     
     ########################################################################################
-    # Dataset Creation
-    
-    trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    train_sampler = DistributedSampler(trainset) if args.distributed else None
+    # Dataloader Creation
+    if args.dataloader == 'pytorch':
+        train_sampler = DistributedSampler(trainset) if args.distributed else None
+        trainLoader = data.DataLoader(
+            trainset, 
+            batch_size=args.batch_size,
+            shuffle=(train_sampler is None),
+            sampler=train_sampler,
+            pin_memory=(args.aug_device != 'gpu'),
+            num_workers=args.num_workers,
+            persistent_workers=(args.num_workers>0),
+        )
+    elif args.dataloader == 'dali':
+        print('world size', args.world_size)
+        call_pipe = trainset.dali_pipeline(
+            dataset=trainset, 
+            bs=args.batch_size, 
+            device=args.aug_device, 
+            batch_size=args.batch_size, 
+            num_threads=args.num_threads, 
+            device_id=args.proc_idx, 
+            shard_id=args.proc_idx, 
+            num_shards=args.world_size,
+            py_num_workers=0, 
+            py_start_method='spawn')
+        call_pipe.build()
 
-    trainLoader = data.DataLoader(
-        trainset, 
-        batch_size=args.batch_size, 
-        shuffle=(train_sampler is None),
-        sampler=train_sampler,
-        pin_memory=True,
-        num_workers=args.num_workers,
-        persistent_workers=True,
-    )
+        trainLoader = DALIGenericIterator(call_pipe, ['data', 'label'], size=len(trainset))
     
     
-    testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     test_sampler = DistributedSampler(testset) if args.distributed else None
     testLoader = data.DataLoader(
         testset,
@@ -99,7 +114,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     best_ASD = np.ones(args.classes) * 1000
     
     for epoch in range(args.epochs):
-        if args.distributed:
+        if args.distributed and args.dataloader == 'pytorch':
             train_sampler.set_epoch(epoch)
 
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
@@ -146,20 +161,16 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
 
     tic = time.time()
     iter_num_per_epoch = 0
-    for i, (img, label) in enumerate(trainLoader):
-        
-        '''
-        # uncomment this for visualize the input images and labels for debug
-        for idx in range(img.shape[0]):
-            plt.subplot(1,2,1)
-            plt.imshow(img[idx, 0, 40, :, :].numpy())
-            plt.subplot(1,2,2)
-            plt.imshow(label[idx, 0, 40, :, :].numpy())
-
-            plt.show()
-        '''
-        img = img.cuda(args.proc_idx, non_blocking=True)
-        label = label.cuda(args.proc_idx, non_blocking=True).long()
+    for i, inputs in enumerate(trainLoader):
+        if args.dataloader == 'pytorch':
+            img, label = inputs[0], inputs[1]
+            img = img.cuda(args.proc_idx, non_blocking=True)
+            label = label.cuda(args.proc_idx, non_blocking=True).long()
+        elif args.dataloader == 'dali':
+            img, label = inputs[0]["data"], inputs[0]["label"]
+            img = img.cuda(args.proc_idx, non_blocking=True)
+            label = label.cuda(args.proc_idx, non_blocking=True).long()
+       
         step = i + epoch * len(trainLoader) # global steps
         
         optimizer.zero_grad()
@@ -227,6 +238,7 @@ def get_parser():
     parser.add_argument('--amp', action='store_true', help='if use the automatic mixed precision for faster training')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--dataloader', default='pytorch', type=str, help='use pytorch or DALI loader')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='the path to save checkpoint and logging info')
     parser.add_argument('--log_path', type=str, default='./log/', help='the path to save tensorboard log')
@@ -271,7 +283,7 @@ def init_network(args):
 
 
 
-def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
+def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None, trainset=None, testset=None):
     # seed each process
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)
@@ -292,7 +304,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         def print_pass(*args, **kwargs):
             pass
 
-        builtins.print = print_pass
+        #builtins.print = print_pass
     if args.distributed:
         if args.dist_url == "env://" and args.rank == -1:
             args.rank = int(os.environ["RANK"])
@@ -345,7 +357,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
 
 
     logging.info(f"Created Model")
-    best_Dice, best_HD, best_ASD = train_net(net, args, ema_net, fold_idx=fold_idx)
+    best_Dice, best_HD, best_ASD = train_net(net, trainset, testset, args, ema_net, fold_idx=fold_idx)
     
     logging.info(f"Training and evaluation on Fold {fold_idx} is done")
     
@@ -364,12 +376,10 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
 
 
 if __name__ == '__main__':
-    #mp.set_start_method('fork')
-    #mp.set_sharing_strategy('file_system')
-    
     # parse the arguments
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    torch.multiprocessing.set_start_method('spawn')
     args.log_path = args.log_path + '%s/'%args.dataset
 
     if args.dist_url == "env://" and args.world_size == -1:
@@ -391,16 +401,20 @@ if __name__ == '__main__':
                 # Since we have ngpus_per_node processes per node, the total world_size
                 # needs to be adjusted accordingly
                 args.world_size = ngpus_per_node * args.world_size
+                trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+                testset = get_dataset(args, mode='test', fold_idx=fold_idx)
                 # Use torch.multiprocessing.spawn to launch distributed processes:
                 # the main_worker process function
-                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict))
+                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict, trainset, testset))
                 best_Dice = result_dict['best_Dice']
                 best_HD = result_dict['best_HD']
                 best_ASD = result_dict['best_ASD']
             args.world_size = 1
         else:
+            trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+            testset = get_dataset(args, mode='test', fold_idx=fold_idx)
             # Simply call main_worker function
-            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args)
+            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args, trainset=trainset, testset=testset)
 
 
 

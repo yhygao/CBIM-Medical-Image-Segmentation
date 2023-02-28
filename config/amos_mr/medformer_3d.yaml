@@ -15,7 +15,7 @@ kernel_size: [[3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
 chan_num: [64, 128, 256, 320, 256, 128, 64, 32]
 norm: in
 act: gelu
-map_size: [5, 5, 5]
+map_size: [4, 4, 4]
 conv_num: [2,0,0,0, 0,0,2,2]
 trans_num: [0,2,4,6, 4,2,0,0]
 num_heads: [1,4,8,10, 8,4,1,1]
@@ -50,6 +50,7 @@ rlt: 1 # relation between CE and Dice loss
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation
 rotate: [30, 30, 30] # rotation angle for data augmentation 
 translate: [0, 0, 0]
+affine_pad_size: [40, 40, 40]
 gaussian_noise_std: 0.02
 
 print_freq: 5
@@ -79,3 +80,8 @@ dist_url: 'tcp://localhost:10003' # the port number here should be the same as t
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
+
+
+# dataloader
+num_threads: 4
+aug_device: 'gpu'

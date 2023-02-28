@@ -45,7 +45,7 @@ def generate_3d_gaussian_kernel(kernel_size, sigma):
 
 def gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 2.0]):
 
-    sigma = 5#torch.rand(1) * (sigma_range[1] - sigma_range[0]) + sigma_range[0]
+    sigma = torch.rand(1) * (sigma_range[1] - sigma_range[0]) + sigma_range[0]
     
     if len(tensor_img.shape) == 5:
         dim = '3d'
@@ -122,7 +122,7 @@ def gamma(tensor_img, gamma_range=(0.5, 2), per_channel=False, retain_stats=Fals
 
     mean = tensor_img.mean(dim=1).unsqueeze(1)
     std = tensor_img.std(dim=1).unsqueeze(1)
-    gamma = torch.rand(C, 1) * (gamma_range[1] - gamma_range[0]) + gamma_range[0]
+    gamma = torch.rand(C, 1).to(tensor_img.device) * (gamma_range[1] - gamma_range[0]) + gamma_range[0]
 
     tensor_img = torch.pow((tensor_img - minm) / rng, gamma) * rng + minm
 
@@ -155,7 +155,7 @@ def contrast(tensor_img, contrast_range=(0.65, 1.5), per_channel=False, preserve
 
 
     mean = tensor_img.mean(dim=1).unsqueeze(1)
-    factor = torch.rand(C, 1) * (contrast_range[1] - contrast_range[0]) + contrast_range[0]
+    factor = torch.rand(C, 1).to(tensor_img.device) * (contrast_range[1] - contrast_range[0]) + contrast_range[0]
 
     tensor_img = (tensor_img - mean) * factor + mean
 
@@ -217,7 +217,7 @@ def random_scale_rotate_translate_2d(tensor_img, tensor_lab, scale, rotate, tran
                                 [0, 0, 1]]).float()
     
     theta = torch.mm(theta_scale, theta_rotate)[0:2, :]
-    grid = F.affine_grid(theta.unsqueeze(0), tensor_img.size(), align_corners=True)
+    grid = F.affine_grid(theta.unsqueeze(0), tensor_img.size(), align_corners=True).to(tensor_img.device)
 
     tensor_img = F.grid_sample(tensor_img, grid, mode='bilinear', padding_mode='zeros', align_corners=True)
     tensor_lab = F.grid_sample(tensor_lab.float(), grid, mode='nearest', padding_mode='zeros', align_corners=True).long()
@@ -285,7 +285,7 @@ def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale=0.3, rotate=4
     theta = torch.mm(theta, theta_rotate_z)
     
     theta = torch.mm(theta, theta_scale)[0:3, :].unsqueeze(0)
-    grid = F.affine_grid(theta, tensor_img.size(), align_corners=True)
+    grid = F.affine_grid(theta, tensor_img.size(), align_corners=True).to(tensor_img.device)
     tensor_img = F.grid_sample(tensor_img, grid, mode='bilinear', padding_mode='zeros', align_corners=True)
     tensor_lab = F.grid_sample(tensor_lab.float(), grid, mode='nearest', padding_mode='zeros', align_corners=True).long()
 
