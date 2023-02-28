@@ -43,9 +43,10 @@ def generate_3d_gaussian_kernel(kernel_size, sigma):
 
     return kernel.unsqueeze(0).unsqueeze(0)
 
-def gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 2.0]):
+def gaussian_blur(tensor_img, sigma_range=[0.5, 1.0]):
 
     sigma = torch.rand(1) * (sigma_range[1] - sigma_range[0]) + sigma_range[0]
+    kernel_size = 2 * math.ceil(3 * sigma) + 1
     
     if len(tensor_img.shape) == 5:
         dim = '3d'
@@ -100,7 +101,7 @@ def brightness_multiply(tensor_img, multiply_range=[0.7, 1.3], per_channel=False
     return tensor_img * rand_brightness
 
 
-def gamma(tensor_img, gamma_range=(0.5, 2), per_channel=False, retain_stats=False):
+def gamma(tensor_img, gamma_range=(0.5, 2), per_channel=False, retain_stats=True):
     
     if len(tensor_img.shape) == 5:
         dim = '3d'
@@ -112,7 +113,6 @@ def gamma(tensor_img, gamma_range=(0.5, 2), per_channel=False, retain_stats=Fals
         raise ValueError('Invalid input tensor dimension, should be 5d for volume image or 4d for 2d image')
     
     tmp_C = C if per_channel else 1
-    
     tensor_img = tensor_img.view(tmp_C, -1)
     minm, _ = tensor_img.min(dim=1)
     maxm, _ = tensor_img.max(dim=1)
@@ -147,7 +147,6 @@ def contrast(tensor_img, contrast_range=(0.65, 1.5), per_channel=False, preserve
         raise ValueError('Invalid input tensor dimension, should be 5d for volume image or 4d for 2d image')
 
     tmp_C = C if per_channel else 1
-
     tensor_img = tensor_img.view(tmp_C, -1)
     minm, _ = tensor_img.min(dim=1)
     maxm, _ = tensor_img.max(dim=1)

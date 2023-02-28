@@ -36,12 +36,10 @@ class AMOSDataset(Dataset):
         
         if mode == 'train':
             #img_name_list = train_name_list[:4]
-            #pass
-            img_name_list = img_name_list[:4]
+            pass
         else:
             #img_name_list = test_name_list[:4]
             img_name_list = [553, 575, 598, 559, 547, 563, 549, 545, 573, 561, 552, 568, 576, 550, 562, 546, 572, 556, 544, 581]
-            img_name_list = img_name_list[:4]
 
         
         print('Start loading %s data'%self.mode)
@@ -94,7 +92,11 @@ class AMOSDataset(Dataset):
         z, y, x = img.shape
         
         # pad if the image size is smaller than trainig+pad size
-        pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
+        if self.args.dataloader == 'dali':
+            pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
+        else:
+            pad_size = self.args.training_size
+
         if z < pad_size[0]:
             diff = int(math.ceil((pad_size[0] - z) / 2))
             img = np.pad(img, ((diff, diff), (0,0), (0,0)))
@@ -133,19 +135,6 @@ class AMOSDataset(Dataset):
                 tensor_lab = tensor_lab.cuda(self.args.proc_idx)
             
             d, h, w = self.args.training_size
-            # Gaussian Noise
-            if np.random.random() < 0.15:
-                std = np.random.random() * 0.1
-                tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
-
-            if np.random.random() < 0.2: 
-                tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
-            if np.random.random() < 0.2:
-                tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
-            if np.random.random() < 0.2:
-                tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
-            if np.random.random() < 0.2:
-                tensor_img = augmentation.gaussian_blur(tensor_img, kernel_size=3, sigma_range=[0.5, 1.0])
 
 
             if np.random.random() < 0.2:
@@ -158,7 +147,23 @@ class AMOSDataset(Dataset):
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
                  tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
-               
+            tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
+
+            # Gaussian Noise
+            if np.random.random() < 0.2: 
+                tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.brightness_additive(tensor_img, std=0.2)
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.7, 1.3])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
+            if np.random.random() < 0.2:
+                std = np.random.random() * 0.1
+                tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
+
         tensor_img = tensor_img.squeeze(0)
         tensor_lab = tensor_lab.squeeze(0)
         assert tensor_img.shape == tensor_lab.shape
