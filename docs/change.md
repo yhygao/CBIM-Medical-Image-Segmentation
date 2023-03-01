@@ -1,5 +1,17 @@
 ## Recent Changes
 
+
+#### Mar. 1, 2023
+- Support AMOS CT and MR dataset
+- Support KiTS dataset
+- Support using GPU for data augmentation
+    - The affine transformation (rotation, scaling, translation, shearing) for 3D image is computational intensive. Previously, we use multiple CPU workers to perform augmentation, which is slow (5-6 seconds for 160\*160\*160 image)
+    - Now, we support two ways to use GPU to acesslerate augmentation (0.1-0.3 s for 160\*160\*160 image, with more GPU memory consumption 1-2 G)
+    - We support use PyTorch cuda operation. You can simply activate this function my setting 'aug\_device' in the config to 'gpu'.
+    - We support NVIDIA DALI to perform augmentation. You can set the 'dataloader' to 'dali' to use DALI operations for augmentation. We also provide commonly used DALI augmentation functions in the 'training/augmentation\_dali.py'.
+    - In my own experimence, using PyTorch cuda operation already provides huge acceleration. DALI has more advantages in the cpu mode. In the gpu mode, DALI has limited advantages, but needs a lot of time to learn its APIs.
+
+
 #### Dec. 19, 2022
 - Support distributed training with PyTorch DDP
     - We provide a new training script: *train\_ddp.py*, which supports PyTorch distributed training

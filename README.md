@@ -7,6 +7,7 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
 
+**Support using GPU to conduct data augmentation for faster training**
 - **Support AMOS22 dataset. (Feb. 16, 2023)**
 - **Add results of each dataset trained with our repo: [Sheet](https://docs.google.com/spreadsheets/d/1f5JjMURX-HwdYETnRgZssWjf17mbnMfbVDe8aYYiLMY/edit?usp=sharing). (Feb. 16, 2023)**
 - **Support KiTS19 dataset. (Feb. 10, 2023)**
