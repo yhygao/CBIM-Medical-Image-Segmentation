@@ -68,4 +68,4 @@ reproduce_seed: null
 
 # dataloader
 num_threads: 4
-aug_device: 'gpu' # 'cpu' or 'gpu'. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
+aug_device: 'cpu' # 'cpu' or 'gpu'. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs

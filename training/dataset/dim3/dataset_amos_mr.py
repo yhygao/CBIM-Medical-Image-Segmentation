@@ -174,7 +174,6 @@ class AMOSDataset(Dataset):
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
 
 
-
     def getitem_dali(self, idx):
         
         #print(self.args.proc_idx, os.getpid(), idx)

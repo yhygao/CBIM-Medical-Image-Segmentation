@@ -13,7 +13,7 @@ base_chan: 48
 epochs: 300
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
-num_workers: 4
+num_workers: 2
 
 split_seed: 0
 k_fold: 5
@@ -28,6 +28,7 @@ rlt: 1 # relation between CE and Dice loss
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
 rotate: [30, 30, 30] # rotation angle for data augmentation 
 translate: [0, 0, 0]
+affine_pad_size: [40, 40, 40]
 gaussian_noise_std: 0.02
 
 print_freq: 5
@@ -57,3 +58,8 @@ dist_url: 'tcp://localhost:10000' # the port number here should be the same as t
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
+
+
+# dataloader
+num_threads: 4
+aug_device: 'gpu'
