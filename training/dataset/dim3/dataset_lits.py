@@ -113,10 +113,23 @@ class LiverDataset(Dataset):
 
 
         if self.mode == 'train':
-            
+            tensor_img = tensor_img.cuda(self.args.proc_idx)
+            tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+
             d, h, w = self.args.training_size
 
-            # Gaussian Noise
+            if np.random.random() < 0.2:
+                # crop trick for faster augmentation
+                # crop a sub volume for scaling and rotation
+                # instead of scaling and rotating the whole image
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+70, h+70, w+70], mode='random')
+                tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
+            else:
+                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
+            
+            tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
+
             if np.random.random() < 0.15:
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
@@ -136,19 +149,7 @@ class LiverDataset(Dataset):
             if np.random.random() < 0.05:
                 tensor_img = augmentation.mirror(tensor_img, axis=1)
                 tensor_lab = augmentation.mirror(tensor_lab, axis=1)
-
-
-            
-            if np.random.random() < 0.2:
-                # crop trick for faster augmentation
-                # crop a sub volume for scaling and rotation
-                # instead of scaling and rotating the whole image
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+70, h+70, w+70], mode='random')
-                tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
-            else:
-                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
-               
+              
 
         tensor_img = tensor_img.squeeze(0)
         tensor_lab = tensor_lab.squeeze(0)
@@ -156,6 +157,6 @@ class LiverDataset(Dataset):
         assert tensor_img.shape == tensor_lab.shape
 
         if self.mode == 'train':
-            return tensor_img, tensor_lab.to(torch.int8)
+            return tensor_img, tensor_lab
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])

@@ -126,7 +126,7 @@ class BCVDataset(Dataset):
 
             d, h, w = self.args.training_size
             
-            if np.random.random() < 0.3:
+            if np.random.random() < 0.4:
 
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+15, h+65, w+65], mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
@@ -137,7 +137,7 @@ class BCVDataset(Dataset):
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
             
             tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
-            '''
+            
             if np.random.random() < 0.2:
                 tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
             if np.random.random() < 0.2:
@@ -148,7 +148,6 @@ class BCVDataset(Dataset):
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.7, 1.3])
             if np.random.random() < 0.2:
                 tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
-            '''
             if np.random.random() < 0.2:
                 std = np.random.random() * 0.1 
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)

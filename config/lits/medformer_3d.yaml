@@ -30,7 +30,7 @@ proj_type: 'depthwise'
 
 #TRAIN
 epochs: 200
-training_size: [96, 96, 96] # training crop size
+training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
 aux_loss: False
@@ -50,6 +50,7 @@ rlt: 1 # relation between CE and Dice loss
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation
 rotate: [30, 30, 30] # rotation angle for data augmentation 
 translate: [0, 0, 0]
+affine_pad_size: [50, 50, 50]
 gaussian_noise_std: 0.02
 
 print_freq: 5
@@ -67,7 +68,7 @@ val_freq: 10
 
 #INFERENCE
 sliding_window: True
-window_size: [96, 96, 96]
+window_size: [128, 128, 128]
 
 
 # DDP
@@ -79,3 +80,8 @@ dist_url: 'tcp://localhost:10000' # the port number here should be the same as t
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
+
+# dataloader
+num_threads: 4
+aug_device: 'gpu'
+
