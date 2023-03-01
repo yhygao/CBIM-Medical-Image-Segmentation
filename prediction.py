@@ -91,6 +91,8 @@ def postprocess(tensor_pred, itk_img, args):
     itk_pred = sitk.GetImageFromArray(np_pred)
     if args.target_spacing != itk_img.GetSpacing():
         itk_pred.SetSpacing(args.target_spacing)
+        itk_pred.SetOrigin(itk_img.GetOrigin())
+        itk_pred.SetDirection(itk_img.GetDirection())
         itk_pred = ResampleLabelToRef(itk_pred, itk_img, interp=sitk.sitkNearestNeighbor)
 
     itk_pred.CopyInformation(itk_img)
