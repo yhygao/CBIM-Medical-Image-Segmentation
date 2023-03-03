@@ -10,7 +10,7 @@ import pdb
 
 class BidirectionAttention(nn.Module):
     def __init__(self, feat_dim, map_dim, out_dim, heads=4, dim_head=64, attn_drop=0., proj_drop=0.,
-                    map_size=[8,8,8], proj_type='depthwose', kernel_size=[3,3,3]):
+                    map_size=[8,8,8], proj_type='depthwose', kernel_size=[3,3,3], no_map_out=False):
         super().__init__()
 
         self.inner_dim = dim_head * heads
@@ -32,7 +32,10 @@ class BidirectionAttention(nn.Module):
 
         
         self.map_qv = nn.Conv3d(map_dim, self.inner_dim*2, kernel_size=1, stride=1, padding=0, bias=False)
-        self.map_out = nn.Conv3d(self.inner_dim, map_dim, kernel_size=1, stride=1, padding=0, bias=False)
+        if no_map_out:
+            self.map_out = nn.Identity()
+        else:
+            self.map_out = nn.Conv3d(self.inner_dim, map_dim, kernel_size=1, stride=1, padding=0, bias=False)
 
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj_drop = nn.Dropout(proj_drop)
@@ -74,7 +77,7 @@ class BidirectionAttention(nn.Module):
 class BidirectionAttentionBlock(nn.Module):
     def __init__(self, feat_dim, map_dim, out_dim, heads, dim_head, norm=nn.BatchNorm3d, act=nn.ReLU,
                 expansion=4, attn_drop=0., proj_drop=0., map_size=[8, 8, 8], 
-                proj_type='depthwise', kernel_size=[3,3,3]):
+                proj_type='depthwise', kernel_size=[3,3,3], no_map_out=False):
         super().__init__()
 
         assert norm in [nn.BatchNorm3d, nn.InstanceNorm3d, LayerNorm, True, False]
@@ -84,7 +87,7 @@ class BidirectionAttentionBlock(nn.Module):
         self.norm1 = norm(feat_dim) if norm else nn.Identity() # norm layer for feature map
         self.norm2 = norm(map_dim) if norm else nn.Identity() # norm layer for semantic map
         
-        self.attn = BidirectionAttention(feat_dim, map_dim, out_dim, heads, dim_head, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, kernel_size=kernel_size)
+        self.attn = BidirectionAttention(feat_dim, map_dim, out_dim, heads, dim_head, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, kernel_size=kernel_size, no_map_out=no_map_out)
 
         self.shortcut = nn.Sequential()
         if feat_dim != out_dim:
@@ -152,7 +155,7 @@ class BasicLayer(nn.Module):
     No downsample or upsample operation in this layer, they are wrapped in the down_block of up_block
     """
 
-    def __init__(self, feat_dim, map_dim, out_dim, num_blocks, heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0., map_size=[8,8,8], proj_type='depthwise', norm=nn.BatchNorm3d, act=nn.GELU, kernel_size=[3,3,3]):
+    def __init__(self, feat_dim, map_dim, out_dim, num_blocks, heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0., map_size=[8,8,8], proj_type='depthwise', norm=nn.BatchNorm3d, act=nn.GELU, kernel_size=[3,3,3], no_map_out=False):
         super().__init__()
 
         dim1 = feat_dim
@@ -160,7 +163,8 @@ class BasicLayer(nn.Module):
 
         self.blocks = nn.ModuleList([])
         for i in range(num_blocks):
-            self.blocks.append(BidirectionAttentionBlock(dim1, map_dim, dim2, heads, dim_head, expansion=expansion, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, norm=norm, act=act, kernel_size=kernel_size))
+            no_map_out_args = False if i != (num_blocks-1) else no_map_out
+            self.blocks.append(BidirectionAttentionBlock(dim1, map_dim, dim2, heads, dim_head, expansion=expansion, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, norm=norm, act=act, kernel_size=kernel_size, no_map_out=no_map_out_args))
             dim1 = out_dim
 
     def forward(self, x, semantic_map):
@@ -292,7 +296,7 @@ class up_block(nn.Module):
     def __init__(self, in_ch, out_ch, conv_num, trans_num, up_scale=[2,2,2], kernel_size=[3,3,3], 
                 conv_block=BasicBlock, heads=4, dim_head=64, expansion=4, attn_drop=0., proj_drop=0.,
                 map_size=[4,8,8], proj_type='depthwise', norm=nn.BatchNorm3d, act=nn.GELU, 
-                map_dim=None, map_shortcut=False):
+                map_dim=None, map_shortcut=False, no_map_out=False):
         super().__init__()
 
 
@@ -301,13 +305,13 @@ class up_block(nn.Module):
         if map_shortcut:
             self.map_reduction = nn.Conv3d(in_ch+out_ch, map_dim, kernel_size=1, bias=False)
         else:
-            self.map_reduction = nn.Conv3d(in_ch, map_dim, kernel_size=1, bias=False)
+            self.map_reduction = nn.Identity() #nn.Conv3d(in_ch, map_dim, kernel_size=1, bias=False)
 
         self.trans_blocks = BasicLayer(in_ch+out_ch, map_dim, out_ch, num_blocks=trans_num, \
 
                     heads=heads, dim_head=dim_head, norm=norm, act=act, expansion=expansion, \
                     attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size,\
-                    proj_type=proj_type, kernel_size=kernel_size)
+                    proj_type=proj_type, kernel_size=kernel_size, no_map_out=no_map_out)
 
         if trans_num == 0:
             dim1 = in_ch+out_ch
@@ -330,11 +334,10 @@ class up_block(nn.Module):
         
         if self.map_shortcut and map2 is not None:
             semantic_map = torch.cat([map1, map2], dim=1)
+            semantic_map = self.map_reduction(semantic_map)
         else:
             semantic_map = map1
         
-        if semantic_map is not None:
-            semantic_map = self.map_reduction(semantic_map)
 
         out, semantic_map = self.trans_blocks(feat, semantic_map)
         out = self.conv_blocks(out)

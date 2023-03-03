@@ -126,7 +126,7 @@ class BCVDataset(Dataset):
 
             d, h, w = self.args.training_size
             
-            if np.random.random() < 0.4:
+            if np.random.random() < 0.5:
 
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+15, h+65, w+65], mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)

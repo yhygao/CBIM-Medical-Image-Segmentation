@@ -345,7 +345,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None, trai
         ema_net.to('cuda')
     if args.distributed:
         net = nn.SyncBatchNorm.convert_sync_batchnorm(net)
-        net = DistributedDataParallel(net, device_ids=[args.proc_idx], find_unused_parameters=True)
+        net = DistributedDataParallel(net, device_ids=[args.proc_idx], find_unused_parameters=False)
         # set find_unused_parameters to True if some of the parameters is not used in forward
         
         if args.ema:

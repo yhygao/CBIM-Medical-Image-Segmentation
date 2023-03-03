@@ -11,7 +11,7 @@ def get_optimizer(args, net):
     elif args.optimizer == 'adam':
         return optim.Adam(net.parameters(), lr=args.base_lr, betas=args.betas, weight_decay=args.weight_decay)
     elif args.optimizer == 'adamw':
-        return optim.AdamW(net.parameters(), lr=args.base_lr, betas=args.betas, weight_decay=args.weight_decay)
+        return optim.AdamW(net.parameters(), lr=args.base_lr, betas=args.betas, weight_decay=args.weight_decay, eps=1e-5) # larger eps has better stability during AMP training
 
 
 def log_evaluation_result(writer, dice_list, ASD_list, HD_list, name, epoch, args):
