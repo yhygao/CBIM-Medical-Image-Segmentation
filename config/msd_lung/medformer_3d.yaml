@@ -1,0 +1,86 @@
+#DATA
+data_root: dataset/kits_3d
+classes: 3
+modality: CT
+
+
+#MODEL
+arch: medformer
+in_chan: 1
+base_chan: 32
+conv_block: 'BasicBlock'
+
+down_scale: [[2,2,2], [2,2,2], [2,2,2], [2,2,2]]
+kernel_size: [[3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
+chan_num: [64, 128, 256, 320, 256, 128, 64, 32]
+norm: in
+act: gelu
+map_size: [4, 4, 4]
+conv_num: [2,0,0,0, 0,0,2,2]
+trans_num: [0,2,4,6, 4,2,0,0]
+num_heads: [1,4,8,10, 8,4,1,1]
+expansion: 4
+fusion_depth: 2
+fusion_dim: 320
+fusion_heads: 10
+attn_drop: 0.
+proj_drop: 0.
+proj_type: 'depthwise'
+
+
+#TRAIN
+epochs: 300
+training_size: [80, 192, 160] # training crop size
+start_epoch: 0
+num_workers: 2
+aux_loss: True
+aux_weight: [0.5, 0.5]
+
+split_seed: 0
+k_fold: 5
+
+optimizer: adamw
+base_lr: 0.0004
+betas: [0.9, 0.999]
+weight_decay: 0.05  # weight decay of the optimizer
+weight: [0.5, 1, 2]
+rlt: 1 # relation between CE and Dice loss
+
+
+scale: [0.3, 0.3, 0.3]  # scale for data augmentation
+rotate: [30, 30, 30] # rotation angle for data augmentation 
+translate: [0, 0, 0]
+affine_pad_size: [40, 40, 40]
+gaussian_noise_std: 0.02
+
+print_freq: 5
+iter_per_epoch: 500
+
+
+
+
+#VALIDATION
+ema: True
+ema_alpha: 0.99
+val_freq: 50
+
+
+
+#INFERENCE
+sliding_window: True
+window_size: [80, 192, 160]
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10001' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true
+reproduce_seed: null
+
+# dataloader
+num_threads: 4
+aug_device: 'gpu'

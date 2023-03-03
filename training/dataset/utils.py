@@ -38,6 +38,12 @@ def get_dataset(args, mode, **kwargs):
 
             return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 
+        elif args.dataset == 'msd_lung':
+            from .dim3.dataset_msd_lung import LungDataset
+
+            return LungDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+            
+
 
 
 class DALIInputCallable(object):
