@@ -314,7 +314,7 @@ def crop_2d(tensor_img, tensor_lab, crop_size, mode):
     cropped_img = tensor_img[:, :, rand_x:rand_x+crop_size[0], rand_y:rand_y+crop_size[1]]
     cropped_lab = tensor_lab[:, :, rand_x:rand_x+crop_size[0], rand_y:rand_y+crop_size[1]]
 
-    return cropped_img, cropped_lab
+    return cropped_img.contiguous(), cropped_lab.congiguous()
 
 
 def crop_3d(tensor_img, tensor_lab, crop_size, mode):
@@ -330,15 +330,54 @@ def crop_3d(tensor_img, tensor_lab, crop_size, mode):
     
     if mode == 'random':
         rand_z = np.random.randint(0, max(diff_D, 1))
-        rand_x = np.random.randint(0, max(diff_H, 1))
-        rand_y = np.random.randint(0, max(diff_W, 1))
+        rand_y = np.random.randint(0, max(diff_H, 1))
+        rand_x = np.random.randint(0, max(diff_W, 1))
     else:
         rand_z = diff_D // 2
-        rand_x = diff_H // 2
-        rand_y = diff_W // 2
+        rand_y = diff_H // 2
+        rand_x = diff_W // 2
 
-    cropped_img = tensor_img[:, :, rand_z:rand_z+crop_size[0], rand_x:rand_x+crop_size[1], rand_y:rand_y+crop_size[2]]
-    cropped_lab = tensor_lab[:, :, rand_z:rand_z+crop_size[0], rand_x:rand_x+crop_size[1], rand_y:rand_y+crop_size[2]]
+    cropped_img = tensor_img[:, :, rand_z:rand_z+crop_size[0], rand_y:rand_y+crop_size[1], rand_x:rand_x+crop_size[2]]
+    cropped_lab = tensor_lab[:, :, rand_z:rand_z+crop_size[0], rand_y:rand_y+crop_size[1], rand_x:rand_x+crop_size[2]]
 
-    return cropped_img, cropped_lab
+    return cropped_img.contiguous(), cropped_lab.contiguous()
+
+
+def crop_around_coordinate_3d(tensor_img, tensor_lab, crop_size, coordinate, mode):
+    assert mode in ['random', 'center'], "Invalid Mode, should be \'random\' or \'center\'"
+    if isinstance(crop_size, int):
+        crop_size = [crop_size] * 3
+
+    z, y, x = coordinate
+
+    _, _, D, H, W = tensor_img.shape
+
+    diff_D = D - crop_size[0]
+    diff_H = H - crop_size[1]
+    diff_W = W - crop_size[2]
+    
+    
+    if mode == 'random':
+        min_z = max(0, z-crop_size[0])
+        max_z = min(diff_D, z+crop_size[0])
+        min_y = max(0, y-crop_size[1])
+        max_y = min(diff_H, y+crop_size[1])
+        min_x = max(0, x-crop_size[2])
+        max_x = min(diff_W, x+crop_size[2])
+        
+        rand_z = np.random.randint(min_z, max_z)
+        rand_y = np.random.randint(min_y, max_y)
+        rand_x = np.random.randint(min_x, max_x)
+    else:
+        min_z = max(0, z - math.ceil(crop_size[0] / 2))
+        rand_z = min(min_z, D - crop_size[0])
+        min_y = max(0, y - math.ceil(crop_size[1] / 2))
+        rand_y = min(min_y, H - crop_size[1])
+        min_x = max(0, x - math.ceil(crop_size[2] / 2))
+        rand_x = min(min_x, W - crop_size[2])
+
+    cropped_img = tensor_img[:, :, rand_z:rand_z+crop_size[0], rand_y:rand_y+crop_size[1], rand_x:rand_x+crop_size[2]]
+    cropped_lab = tensor_lab[:, :, rand_z:rand_z+crop_size[0], rand_y:rand_y+crop_size[1], rand_x:rand_x+crop_size[2]]
+
+    return cropped_img.contiguous(), cropped_lab.contiguous()
 

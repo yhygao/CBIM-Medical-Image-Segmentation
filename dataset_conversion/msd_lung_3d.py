@@ -14,7 +14,7 @@ def CropBody(itkImg, itkLab):
     npimg = sitk.GetArrayFromImage(itkImg)
     nplab = sitk.GetArrayFromImage(itkLab)
     
-    mask = (npimg > 500).astype(np.uint8)
+    mask = (npimg > 0).astype(np.uint8)
     #mask = morphology.remove_small_objects(measure.label(mask), min_size=50)
     
     labeled_mask = measure.label(mask, connectivity=3)
@@ -32,9 +32,6 @@ def CropBody(itkImg, itkLab):
     z_min, y_min, x_min, z_max, y_max, x_max = regions[largest_idx].bbox
 
 
-    x_min = max(0, x_min - 60)
-    x_max = min(xx, x_max + 60)
-    y_max = min(yy, y_max+30)
     cropped_img = npimg[z_min:z_max, y_min:y_max, x_min:x_max]
     cropped_lab = nplab[z_min:z_max, y_min:y_max, x_min:x_max]
 

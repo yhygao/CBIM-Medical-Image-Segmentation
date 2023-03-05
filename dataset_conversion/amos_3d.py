@@ -52,9 +52,9 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
 if __name__ == '__main__':
 
 
-    src_path = '/research/cbim/medical/yg397/AMOS/amos22/'
-    ct_tgt_path = '/research/cbim/medical/yg397/AMOS/amos_ct_3d/'
-    mr_tgt_path = '/research/cbim/medical/yg397/AMOS/amos_mr_3d/'
+    src_path = '/filer/tmp1/yg397/dataset/amos/amos22/'
+    ct_tgt_path = '/filer/tmp1/yg397/dataset/amos/cbim/amos_ct_3d/'
+    mr_tgt_path = '/filer/tmp1/yg397/dataset/amos/cbim/amos_mr_3d/'
 
 
     print('Start processing training set')

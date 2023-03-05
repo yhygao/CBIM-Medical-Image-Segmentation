@@ -94,7 +94,7 @@ class LiverDataset(Dataset):
             lab = np.pad(lab, ((0,0), (0,0), (diff, diff)))
 
         tensor_img = torch.from_numpy(img).float()
-        tensor_lab = torch.from_numpy(lab).long()
+        tensor_lab = torch.from_numpy(lab).to(torch.int8)
 
         assert tensor_img.shape == tensor_lab.shape
         

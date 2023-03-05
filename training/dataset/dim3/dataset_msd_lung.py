@@ -42,6 +42,7 @@ class LungDataset(Dataset):
         self.img_list = []
         self.lab_list = []
         self.spacing_list = []
+        self.pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
 
         for name in img_name_list:
             img_name = '%s.nii.gz'%name
@@ -78,23 +79,23 @@ class LungDataset(Dataset):
         img /= 324.7
 
         z, y, x = img.shape
-        
+
         # pad if the image size is smaller than trainig size
-        if z < self.args.training_size[0]:
-            diff = int(math.ceil((self.args.training_size[0] - z) / 2))
+        if z < self.pad_size[0]:
+            diff = int(math.ceil((self.pad_size[0] - z) / 2))
             img = np.pad(img, ((diff, diff), (0,0), (0,0)))
             lab = np.pad(lab, ((diff, diff), (0,0), (0,0)))
-        if y < self.args.training_size[1]:
-            diff = int(math.ceil((self.args.training_size[1]+2 - y) / 2))
+        if y < self.pad_size[1]:
+            diff = int(math.ceil((self.pad_size[1]+2 - y) / 2))
             img = np.pad(img, ((0,0), (diff,diff), (0,0)))
             lab = np.pad(lab, ((0,0), (diff, diff), (0,0)))
-        if x < self.args.training_size[2]:
-            diff = int(math.ceil((self.args.training_size[2]+2 - x) / 2))
+        if x < self.pad_size[2]:
+            diff = int(math.ceil((self.pad_size[2]+2 - x) / 2))
             img = np.pad(img, ((0,0), (0,0), (diff, diff)))
             lab = np.pad(lab, ((0,0), (0,0), (diff, diff)))
 
         tensor_img = torch.from_numpy(img).float()
-        tensor_lab = torch.from_numpy(lab).long()
+        tensor_lab = torch.from_numpy(lab).to(torch.int8)
 
         assert tensor_img.shape == tensor_lab.shape
         
@@ -117,13 +118,19 @@ class LungDataset(Dataset):
                 tensor_img = tensor_img.cuda(self.args.proc_idx)
                 tensor_lab = tensor_lab.cuda(self.args.proc_idx)
             d, h, w = self.args.training_size
-
+            
+            if np.random.random() < self.args.foreground_sample_prob:
+                # oversample the foreground due to the small size of the nodule
+                _, _, z, y, x = torch.nonzero(tensor_lab)[0] # coordinates of one foreground, should crop around it
+                z, y, x = z.item(), y.item(), x.item()
+                tensor_img, tensor_lab = augmentation.crop_around_coordinate_3d(tensor_img, tensor_lab, self.pad_size, (z, y, x), mode='random')
+                tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
             
             if np.random.random() < 0.4:
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+30, h+60, w+60], mode='random')
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.pad_size, mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
