@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/lits_3d
+data_root: /filer/tmp1/yg397/dataset/lits/lits_3d
 classes: 3
 modality: CT
 
