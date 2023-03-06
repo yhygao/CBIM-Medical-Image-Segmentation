@@ -44,8 +44,8 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
 if __name__ == '__main__':
 
 
-    src_path = '/research/cbim/medical/yg397/synapse/Abdomen/RawData/Training/'
-    tgt_path = '/research/cbim/medical/yg397/tgt_dir/'
+    src_path = '/filer/tmp1/yg397/dataset/bcv/Abdomen/RawData/Training/'
+    tgt_path = '/filer/tmp1/yg397/dataset/bcv/bcv_3d/'
 
 
     name_list = os.listdir(src_path + 'img')

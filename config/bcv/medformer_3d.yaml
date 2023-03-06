@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/bcv_3d
+data_root: /filer/tmp1/yg397/dataset/bcv/bcv_3d
 classes: 14
 modality: CT
 

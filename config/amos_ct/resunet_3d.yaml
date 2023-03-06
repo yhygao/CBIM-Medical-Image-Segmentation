@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/amos_ct_3d
+data_root: /filer/tmp1/yg397/dataset/amos/cbim/amos_ct_3d
 classes: 16
 modality: CT
 

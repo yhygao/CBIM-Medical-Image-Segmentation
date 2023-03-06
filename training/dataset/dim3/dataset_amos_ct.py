@@ -130,7 +130,7 @@ class AMOSDataset(Dataset):
             
             d, h, w = self.args.training_size
             
-            if np.random.random() < 0.2:
+            if np.random.random() < 0.5:
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image

@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/amos_ct_3d
+data_root: /filer/tmp1/yg397/dataset/amos/cbim/amos_ct_3d
 classes: 16
 modality: CT
 
@@ -29,10 +29,10 @@ proj_type: 'depthwise'
 
 
 #TRAIN
-epochs: 300
+epochs: 400
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
-num_workers: 4
+num_workers: 1
 aux_loss: True
 aux_weight: [0.5, 0.5]
 
@@ -84,4 +84,4 @@ reproduce_seed: null
 
 # dataloader
 num_threads: 4
-aug_device: 'cpu' # 'cpu' or 'gpu'. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
+aug_device: 'gpu' # 'cpu' or 'gpu'. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
