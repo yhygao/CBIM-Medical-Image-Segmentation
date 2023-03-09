@@ -121,7 +121,9 @@ class LungDataset(Dataset):
             
             if np.random.random() < self.args.foreground_sample_prob:
                 # oversample the foreground due to the small size of the nodule
-                _, _, z, y, x = torch.nonzero(tensor_lab)[0] # coordinates of one foreground, should crop around it
+                nonzero = torch.nonzero(tensor_lab)
+                tmp_idx = torch.randint(low=0, high=nonzero.shape[0], size=(1,)).item() # random select a foreground
+                _, _, z, y, x = nonzero[tmp_idx] # the coordinates of the foreground to crop around
                 z, y, x = z.item(), y.item(), x.item()
                 tensor_img, tensor_lab = augmentation.crop_around_coordinate_3d(tensor_img, tensor_lab, self.pad_size, (z, y, x), mode='random')
                 tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
@@ -141,6 +143,8 @@ class LungDataset(Dataset):
             if np.random.random() < 0.2:
                 tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
             if np.random.random() < 0.2:
+                tensor_img = augmentation.brightness_additive(tensor_img, std=0.1)
+            if np.random.random() < 0.2:
                 tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
             if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.65, 1.5])
@@ -154,7 +158,7 @@ class LungDataset(Dataset):
                 tensor_img = augmentation.mirror(tensor_img, axis=0)
                 tensor_lab = augmentation.mirror(tensor_lab, axis=0)
             if np.random.random() < 0.2:
-                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
+                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.5])
             if np.random.random() < 0.2:
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
