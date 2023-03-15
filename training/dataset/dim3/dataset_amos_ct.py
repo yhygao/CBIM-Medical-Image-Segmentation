@@ -124,21 +124,27 @@ class AMOSDataset(Dataset):
 
 
         if self.mode == 'train':
-            if self.args.aug_device == 'gpu':
-                tensor_img = tensor_img.cuda(self.args.proc_idx)
-                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
             
-            d, h, w = self.args.training_size
+            _, _, d, h, w = tensor_img.shape
             
-            if np.random.random() < 0.2:
+            if np.random.random() < 0.5:
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, [d+40, h+40, w+40], mode='random')
+                crop_size = [min(i+j, k) for i,j,k in zip(self.args.training_size, self.args.affine_pad_size, [d, h, w])]
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, crop_size, mode='random')
+                if self.args.aug_device == 'gpu':
+                    tensor_img = tensor_img.cuda(self.args.proc_idx)
+                    tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
+                if self.args.aug_device == 'gpu':
+                    tensor_img = tensor_img.cuda(self.args.proc_idx)
+                    tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+
             tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
 
             if np.random.random() < 0.2:
@@ -150,7 +156,7 @@ class AMOSDataset(Dataset):
             if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.7, 1.3])
             if np.random.random() < 0.2:
-                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
+                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.5])
             if np.random.random() < 0.2:
                 std = np.random.random() * 0.1
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)

@@ -35,10 +35,8 @@ class AMOSDataset(Dataset):
         #train_name_list = list(set(img_name_list) - set(test_name_list))
         
         if mode == 'train':
-            #img_name_list = train_name_list[:4]
             pass
         else:
-            #img_name_list = test_name_list[:4]
             img_name_list = [553, 575, 598, 559, 547, 563, 549, 545, 573, 561, 552, 568, 576, 550, 562, 546, 572, 556, 544, 581]
 
         
@@ -92,7 +90,7 @@ class AMOSDataset(Dataset):
         z, y, x = img.shape
         
         # pad if the image size is smaller than trainig+pad size
-        pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
+        pad_size = self.args.training_size
 
         if z < pad_size[0]:
             diff = int(math.ceil((pad_size[0] - z) / 2))
@@ -131,15 +129,15 @@ class AMOSDataset(Dataset):
                 tensor_img = tensor_img.cuda(self.args.proc_idx)
                 tensor_lab = tensor_lab.cuda(self.args.proc_idx)
             
-            d, h, w = self.args.training_size
+            _, _, d, h, w = tensor_img.shape
 
 
-            if np.random.random() < 0.2:
+            if np.random.random() < 0.4:
                 # crop trick for faster augmentation
                 # crop a sub volume for scaling and rotation
                 # instead of scaling and rotating the whole image
-                pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
-                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, pad_size, mode='random')
+                crop_size = [min(i+j, k) for i,j,k in zip(self.args.training_size, self.args.affine_pad_size, [d, h, w])]
+                tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, crop_size, mode='random')
                 tensor_img, tensor_lab = augmentation.random_scale_rotate_translate_3d(tensor_img, tensor_lab, self.args.scale, self.args.rotate, self.args.translate)
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='center')
             else:
@@ -156,9 +154,9 @@ class AMOSDataset(Dataset):
             if np.random.random() < 0.2:
                 tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.7, 1.3])
             if np.random.random() < 0.2:
-                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
+                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.5])
             if np.random.random() < 0.2:
-                std = np.random.random() * 0.1
+                std = np.random.random() * 0.2
                 tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
 
         tensor_img = tensor_img.squeeze(0)

@@ -223,7 +223,7 @@ def random_scale_rotate_translate_2d(tensor_img, tensor_lab, scale, rotate, tran
 
     return tensor_img, tensor_lab
 
-def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale=0.3, rotate=45, translate=0.1, shear=0.1):
+def random_scale_rotate_translate_3d(tensor_img, tensor_lab, scale=0.3, rotate=45, translate=0.1, shear=0.05):
     '''
     The axis order of SimpleITK is x,y,z
     The axis order of numpy/tensor is z,y,x

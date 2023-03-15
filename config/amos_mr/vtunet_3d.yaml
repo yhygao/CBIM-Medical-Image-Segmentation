@@ -1,50 +1,57 @@
 #DATA
-data_root: /filer/tmp1/yg397/dataset/bcv/bcv_3d
-classes: 14
-modality: CT
+data_root: /filer/tmp1/yg397/dataset/amos/cbim/amos_mr_3d
+classes: 16
+modality: MR
 
 
 #MODEL
-arch: swin_unetr
+arch: vtunet
+init_model: '/research/cbim/vast/yg397/github/UTNet/initmodel/swin_tiny_patch4_window7_224.pth'
 in_chan: 1
-base_chan: 48
+patch_size: [4, 4, 4]
 
 #TRAIN
-epochs: 150
+epochs: 300
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
+aux_loss: False
+aux_weight: [1, 0.1, 0.1, 0.1]
 
 split_seed: 0
-k_fold: 5
+k_fold: 1
 
 optimizer: adamw
 base_lr: 0.0006
 betas: [0.9, 0.999]
+#momentum: 0.9   # momentum of SGD optimizer
 weight_decay: 0.05  # weight decay of SGD optimizer
-weight: [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # weitght of each class in the loss function
+weight: [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 rlt: 1 # relation between CE and Dice loss
+
 
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
 rotate: [30, 30, 30] # rotation angle for data augmentation 
+affine_pad_size: [40, 40, 40]
 translate: [0, 0, 0]
 gaussian_noise_std: 0.02
 
 print_freq: 5
-iter_per_epoch: 300
+iter_per_epoch: 80
+
+
 
 
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 50
+val_freq: 100
 
 
 
 #INFERENCE
 sliding_window: True
 window_size: [128, 128, 128]
-
 
 
 
@@ -57,7 +64,6 @@ dist_url: 'tcp://localhost:10000' # the port number here should be the same as t
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
-
 
 # dataloader
 num_threads: 4

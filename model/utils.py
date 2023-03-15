@@ -108,7 +108,11 @@ def get_model(args, pretrain=False):
             return model
         elif args.model == 'swin_unetr':
             from .dim3 import SwinUNETR
-            model = SwinUNETR(args.window_size, args.in_chan, args.classes)
+            model = SwinUNETR(args.window_size, args.in_chan, args.classes, feature_size=args.base_chan)
+
+            if args.pretrain:
+                weights = torch.load('/research/cbim/vast/yg397/ConvFormer/ConvFormer/initmodel/model_swinvit.pt')
+                model.load_from(weights=weights)
 
             return model
         elif args.model == 'nnformer':

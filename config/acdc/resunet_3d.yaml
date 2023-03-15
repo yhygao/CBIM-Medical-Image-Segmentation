@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_3d
+data_root: /filer/tmp1/yg397/dataset/acdc/acdc_3d
 classes: 4
 modality: mri
 

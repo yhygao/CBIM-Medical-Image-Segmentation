@@ -28,7 +28,7 @@ betas: [0.9, 0.999]
 weight_decay: 0.05  # weight decay of SGD optimizer
 weight: [1, 2]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
-foreground_sample_prob: 0.5
+foreground_sample_prob: 0.33
 
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
 rotate: [30, 30, 30] # rotation angle for data augmentation 

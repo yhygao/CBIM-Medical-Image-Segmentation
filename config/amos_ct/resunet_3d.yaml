@@ -67,5 +67,5 @@ reproduce_seed: null
 
 
 # dataloader
-num_threads: 4
-aug_device: 'cpu' # 'cpu' or 'gpu'. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
+num_threads: 4  #num of threads used in DALI
+aug_device: 'cpu' # 'cpu' or 'gpu' for both pytorch and DALI dataloader. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs

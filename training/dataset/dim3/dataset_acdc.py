@@ -133,6 +133,11 @@ class CMRDataset(Dataset):
 
 
         if self.mode == 'train':
+
+            if self.args.aug_device == 'gpu':
+                tensor_img = tensor_img.cuda(self.args.proc_idx)
+                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+
             # Gaussian Noise
             tensor_img = augmentation.gaussian_noise(tensor_img, std=self.args.gaussian_noise_std)
             # Additive brightness

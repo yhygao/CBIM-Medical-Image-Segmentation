@@ -202,7 +202,7 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
         epoch_loss.update(loss.item(), img.shape[0])
         batch_time.update(time.time() - tic)
         tic = time.time()
-
+        
         if i % args.print_freq == 0:
             progress.display(i)
 
@@ -211,7 +211,6 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
             if iter_num_per_epoch > args.iter_per_epoch:
                 break
 
-        #torch.cuda.empty_cache()
 
         writer.add_scalar('Train/Loss', epoch_loss.avg, epoch+1)
 
