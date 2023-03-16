@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from inference.utils import get_inference
-from metric.utils import calculate_distance, calculate_dice
+from metric.utils import calculate_distance, calculate_dice, calculate_dice_split
 import numpy as np
 from .utils import concat_all_gather, remove_wrap_arounds
 import logging
@@ -60,15 +60,14 @@ def validation(net, dataloader, args):
         
             # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM. Put tensors to cpu if needed.
             #dice, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
-            dice, _, _ = calculate_dice(label_pred.view(-1, 1).cpu(), labels.view(-1, 1).cpu(), args.classes)
+            dice, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
 
             # exclude background
             dice = dice.cpu().numpy()[1:]
 
-            labels = labels.cpu().numpy()
-
+            unique_cls = torch.unique(labels)
             for cls in range(0, args.classes-1):
-                if cls+1 in np.unique(labels): 
+                if cls+1 in unique_cls: 
                     # in case some classes are missing in the GT
                     # only classes appear in the GT are used for evaluation
                     ASD_list[cls].append(tmp_ASD_list[cls])
@@ -131,7 +130,7 @@ def validation_ddp(net, dataloader, args):
             tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
 
             # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM. Put tensors to cpu if needed.
-            tmp_dice_list, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
+            tmp_dice_list, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
             #tmp_dice_list, _, _ = calculate_dice(label_pred.view(-1, 1).cpu(), labels.view(-1, 1).cpu(), args.classes)
 
 
