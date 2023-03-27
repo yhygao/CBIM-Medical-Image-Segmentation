@@ -39,6 +39,25 @@ class BidirectionAttention(nn.Module):
 
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj_drop = nn.Dropout(proj_drop)
+    
+    def rearrange1(self, x, heads):
+        # substitue for rearrange as it is not supported by pytorch2.0 torch.compile
+        # b (dim_head heads) d h w -> b heads (d h w) dim_head
+        b, l, d, h, w = x.shape
+        dim_head = int(l / heads)
+        x = x.view(b, dim_head, heads, -1).contiguous() # b dim_head heads (dhw)
+        x = x.permute(0, 2, 3, 1).contiguous() # b heads (dhw) dim_head
+
+        return x
+    def rearrange2(self, x, d, h, w):
+        # substitue for rearrange as it is not supported by pytorch2.0 torch.compile
+        # 'b heads (d h w) dim_head -> b (dim_head heads) d h w'
+        b, heads, l, dim_head = x.shape
+        x = x.permute(0, 3, 1, 2).contiguous() # b, dim_head, heads, l
+        x = x.view(b, (heads*dim_head), d, h, w).contiguous()
+
+        return x
+
 
         
     def forward(self, feat, semantic_map):
@@ -48,8 +67,11 @@ class BidirectionAttention(nn.Module):
         feat_q, feat_v = self.feat_qv(feat).chunk(2, dim=1) # B, inner_dim, D, H, W
         map_q, map_v = self.map_qv(semantic_map).chunk(2, dim=1) # B, inner_dim, ms, ms, ms
 
-        feat_q, feat_v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=D, h=H, w=W, b=B), [feat_q, feat_v])
-        map_q, map_v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=self.map_size[0], h=self.map_size[1], w = self.map_size[2], b=B), [map_q, map_v])
+        #feat_q, feat_v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=D, h=H, w=W, b=B), [feat_q, feat_v])
+        feat_q, feat_v = map(lambda t: self.rearrange1(t, self.heads), [feat_q, feat_v])
+
+        #map_q, map_v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=self.map_size[0], h=self.map_size[1], w = self.map_size[2], b=B), [map_q, map_v])
+        map_q, map_v = map(lambda t: self.rearrange1(t, self.heads), [map_q, map_v])
 
 
         attn = torch.einsum('bhid,bhjd->bhij', feat_q, map_q)
@@ -60,10 +82,13 @@ class BidirectionAttention(nn.Module):
         map_feat_attn = self.attn_drop(F.softmax(attn, dim=-2))
 
         feat_out = torch.einsum('bhij,bhjd->bhid', feat_map_attn, map_v)
-        feat_out = rearrange(feat_out, 'b heads (d h w) dim_head -> b (dim_head heads) d h w', d=D, h=H, w=W)
+        #feat_out = rearrange(feat_out, 'b heads (d h w) dim_head -> b (dim_head heads) d h w', d=D, h=H, w=W)
+        feat_out = self.rearrange2(feat_out, d=D, h=H, w=W)
+
 
         map_out = torch.einsum('bhji,bhjd->bhid', map_feat_attn, feat_v)
-        map_out = rearrange(map_out, 'b heads (d h w) dim_head -> b (dim_head heads) d h w', d=self.map_size[0], h=self.map_size[1], w=self.map_size[2])
+        #map_out = rearrange(map_out, 'b heads (d h w) dim_head -> b (dim_head heads) d h w', d=self.map_size[0], h=self.map_size[1], w=self.map_size[2])
+        map_out = self.rearrange2(map_out, d=self.map_size[0], h=self.map_size[1], w=self.map_size[2])
 
 
         feat_out = self.proj_drop(self.feat_out(feat_out))
@@ -84,8 +109,8 @@ class BidirectionAttentionBlock(nn.Module):
         assert act in [nn.ReLU, nn.ReLU6, nn.GELU, nn.SiLU, True, False]
         assert proj_type in ['linear', 'depthwise']
 
-        self.norm1 = norm(feat_dim) if norm else nn.Identity() # norm layer for feature map
-        self.norm2 = norm(map_dim) if norm else nn.Identity() # norm layer for semantic map
+        self.norm1 = norm(feat_dim, eps=1e-4) if norm else nn.Identity() # norm layer for feature map
+        self.norm2 = norm(map_dim, eps=1e-4) if norm else nn.Identity() # norm layer for semantic map
         
         self.attn = BidirectionAttention(feat_dim, map_dim, out_dim, heads, dim_head, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, kernel_size=kernel_size, no_map_out=no_map_out)
 
@@ -130,7 +155,7 @@ class PatchMerging(nn.Module):
         else:
             self.reduction = DepthwiseSeparableConv(merged_dim, out_dim, kernel_size=kernel_size)
 
-        self.norm = norm(merged_dim)
+        self.norm = norm(merged_dim, eps=1e-4)
 
     def forward(self, x):
         """

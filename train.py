@@ -225,6 +225,7 @@ def get_parser():
     parser.add_argument('--model', type=str, default='unet', help='model name')
     parser.add_argument('--dimension', type=str, default='2d', help='2d model or 3d model')
     parser.add_argument('--pretrain', action='store_true', help='if use pretrained weight for init')
+    parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
     parser.add_argument('--dataloader', default='pytorch', type=str, help='use pytorch or DALI loader')
@@ -259,6 +260,7 @@ def init_network(args):
     if args.load:
         net.load_state_dict(torch.load(args.load))
         logging.info('Model loaded from {}'.format(args.load))
+    
 
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
@@ -267,6 +269,9 @@ def init_network(args):
         logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
+
+    if args.torch_compile:
+        net = torch.compile(net, mode='max-autotune', fullgraph=True)
     return net, ema_net 
 
 

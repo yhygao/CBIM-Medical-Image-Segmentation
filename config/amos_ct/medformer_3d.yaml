@@ -16,7 +16,7 @@ chan_num: [64, 128, 256, 320, 256, 128, 64, 32]
 norm: in
 act: relu
 map_size: [4, 4, 4]
-conv_num: [2,1,0,0, 0,1,2,1]
+conv_num: [2,1,0,0, 0,1,2,2]
 trans_num: [0,1,4,6, 4,1,0,0]
 num_heads: [1,4,8,10, 8,4,1,1]
 expansion: 4
@@ -32,7 +32,7 @@ proj_type: 'depthwise'
 epochs: 400
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
-num_workers: 1
+num_workers: 2
 aux_loss: True
 aux_weight: [0.5, 0.5]
 
@@ -78,7 +78,7 @@ rank: 0
 port: 10000
 dist_url: 'tcp://localhost:10003' # the port number here should be the same as the previous one
 dist_backend: "nccl"
-multiprocessing_distributed: true
+multiprocessing_distributed: False
 reproduce_seed: null
 
 

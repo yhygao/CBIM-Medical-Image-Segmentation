@@ -63,7 +63,7 @@ def multistep_lr_scheduler_with_warmup(optimizer, init_lr, epoch, warmup_epoch, 
 
 def exp_lr_scheduler_with_warmup(optimizer, init_lr, epoch, warmup_epoch, max_epoch):
 
-    if epoch >= 0 and epoch <= warmup_epoch:
+    if epoch >= 0 and epoch <= warmup_epoch and warmup_epoch != 0:
         lr = init_lr * 2.718 ** (10*(float(epoch) / float(warmup_epoch) - 1.))
         if epoch == warmup_epoch:
             lr = init_lr

@@ -1,6 +1,6 @@
 #DATA
-data_root: dataset/kits_3d
-classes: 3
+data_root: /filer/tmp1/yg397/dataset/msd_lung_3d
+classes: 2
 modality: CT
 
 
@@ -10,7 +10,7 @@ in_chan: 1
 base_chan: 24
 
 #TRAIN
-epochs: 300
+epochs: 500
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
@@ -24,8 +24,9 @@ optimizer: adamw
 base_lr: 0.0004
 betas: [0.9, 0.999]
 weight_decay: 0.05  # weight decay of SGD optimizer
-weight: [0.5, 1, 2]  # weitght of each class in the loss function
+weight: [1, 2]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
+foreground_sample_prob: 0.33
 
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
 rotate: [30, 30, 30] # rotation angle for data augmentation 

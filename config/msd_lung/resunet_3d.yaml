@@ -14,7 +14,7 @@ block: BasicBlock
 norm: in
 
 #TRAIN
-epochs: 300
+epochs: 500
 training_size: [80, 192, 160] # training crop size
 start_epoch: 0
 num_workers: 2

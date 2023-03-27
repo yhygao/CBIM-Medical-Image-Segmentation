@@ -61,6 +61,8 @@ def calculate_dice_split(pred, target, C, block_size=64*64*64):
 
 def calculate_dice(pred, target, C): 
     # pred and target are torch tensor
+    target = target.long()
+    pred = pred.long()
     N = pred.shape[0]
     target_mask = target.data.new(N, C).fill_(0)
     target_mask.scatter_(1, target, 1.) 
