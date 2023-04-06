@@ -6,7 +6,7 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 ### News
 We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
-
+- **We update a revised version of [MedFormer](https://arxiv.org/abs/2203.00131) paper, including more experiments and analysis. The corresponding code will be updated soon** 
 - **Support KiTS19 dataset. (Feb. 10, 2023)**
 - **Support PyTorch DDP and AMP training. (Dec. 19. 2022)**
 - **Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)**
