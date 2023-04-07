@@ -37,6 +37,8 @@ from utils import (
     save_configure,
     AverageMeter,
     ProgressMeter,
+    resume_load_optimizer_checkpoint,
+    resume_load_model_checkpoint,
 )
 
 import types
@@ -72,6 +74,9 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
     optimizer = get_optimizer(args, net)
 
+    if args.resume:
+        resume_load_optimizer_checkpoint(optimizer, args)
+
     criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
     criterion_dl = DiceLoss()
 
@@ -80,7 +85,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     best_ASD = np.ones(args.classes) * 1000
 
     
-    for epoch in range(args.epochs):
+    for epoch in range(args.start_epoch, args.epochs):
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
         logging.info(f"Current lr: {exp_scheduler:.4e}")
@@ -91,6 +96,14 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net 
         
+        # save the latest checkpoint, including net, ema_net, and optimizer
+        torch.save({
+            'epoch': epoch+1,
+            'model_state_dict': net.state_dict(),
+            'ema_model_state_dict': ema_net.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+        }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
+   
         if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
@@ -102,7 +115,13 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                 best_HD = HD_list_test
                 best_ASD = ASD_list_test
 
-                torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                # Save the checkpoint with best performance
+                torch.save({
+                    'epoch': epoch+1,
+                    'model_state_dict': net.state_dict(),
+                    'ema_model_state_dict': ema_net.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
             
             logging.info("Evaluation Done")
             logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
@@ -206,6 +225,7 @@ def get_parser():
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--resume', action='store_true', help='if resume training from checkpoint')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='checkpoint path')
     parser.add_argument('--log_path', type=str, default='./log/', help='log path')
@@ -234,11 +254,6 @@ def get_parser():
 def init_network(args):
     net = get_model(args, pretrain=args.pretrain)
 
-    if args.load:
-        net.load_state_dict(torch.load(args.load))
-        logging.info('Model loaded from {}'.format(args.load))
-    
-
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
         for p in ema_net.parameters():
@@ -246,6 +261,9 @@ def init_network(args):
         logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
+    
+    if args.resume:
+        resume_load_model_checkpoint(net, ema_net, args)
 
     if args.torch_compile:
         net = torch.compile(net, mode='max-autotune', fullgraph=True)
