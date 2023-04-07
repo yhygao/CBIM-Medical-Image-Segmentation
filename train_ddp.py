@@ -37,7 +37,6 @@ import warnings
 import matplotlib.pyplot as plt
 import copy
 
-from nvidia.dali.plugin.pytorch import DALIGenericIterator
 
 from utils import (
     configure_logger,
@@ -55,34 +54,16 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     
     ########################################################################################
     # Dataloader Creation
-    if args.dataloader == 'pytorch':
-        train_sampler = DistributedSampler(trainset) if args.distributed else None
-        trainLoader = data.DataLoader(
-            trainset, 
-            batch_size=args.batch_size,
-            shuffle=(train_sampler is None),
-            sampler=train_sampler,
-            pin_memory=(args.aug_device != 'gpu'),
-            num_workers=args.num_workers,
-            persistent_workers=(args.num_workers>0),
-        )
-    elif args.dataloader == 'dali':
-        print('world size', args.world_size)
-        call_pipe = trainset.dali_pipeline(
-            dataset=trainset, 
-            bs=args.batch_size, 
-            device=args.aug_device, 
-            batch_size=args.batch_size, 
-            num_threads=args.num_threads, 
-            device_id=args.proc_idx, 
-            shard_id=args.proc_idx, 
-            num_shards=args.world_size,
-            py_num_workers=0, 
-            py_start_method='spawn')
-        call_pipe.build()
-
-        trainLoader = DALIGenericIterator(call_pipe, ['data', 'label'], size=len(trainset))
-    
+    train_sampler = DistributedSampler(trainset) if args.distributed else None
+    trainLoader = data.DataLoader(
+        trainset, 
+        batch_size=args.batch_size,
+        shuffle=(train_sampler is None),
+        sampler=train_sampler,
+        pin_memory=(args.aug_device != 'gpu'),
+        num_workers=args.num_workers,
+        persistent_workers=(args.num_workers>0),
+    )
     
     test_sampler = DistributedSampler(testset) if args.distributed else None
     testLoader = data.DataLoader(

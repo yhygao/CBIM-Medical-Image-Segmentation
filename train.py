@@ -54,28 +54,14 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     # Dataset Creation
     trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
     
-    if args.dataloader == 'pytorch':
-        trainLoader = data.DataLoader(
-            trainset, 
-            batch_size=args.batch_size,
-            shuffle=True, 
-            pin_memory=(args.aug_device != 'gpu'), 
-            num_workers=args.num_workers, 
-            persistent_workers=(args.num_workers>0)
-        )
-    elif args.dataloader == 'dali':
-        call_pipe = trainset.dali_pipeline(
-            dataset=trainset, 
-            bs=args.batch_size, 
-            device=args.aug_device, 
-            batch_size=args.batch_size, 
-            num_threads=args.num_threads, 
-            device_id=0, 
-            py_num_workers=0, 
-            py_start_method='spawn')
-        call_pipe.build()
-    
-        trainLoader = DALIGenericIterator(call_pipe, ['data', 'label'], size=len(trainset))
+    trainLoader = data.DataLoader(
+        trainset, 
+        batch_size=args.batch_size,
+        shuffle=True, 
+        pin_memory=(args.aug_device != 'gpu'), 
+        num_workers=args.num_workers, 
+        persistent_workers=(args.num_workers>0)
+    )
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     testLoader = data.DataLoader(testset, batch_size=1, pin_memory=True, shuffle=False, num_workers=2)
@@ -228,7 +214,6 @@ def get_parser():
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
-    parser.add_argument('--dataloader', default='pytorch', type=str, help='use pytorch or DALI loader')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='checkpoint path')
     parser.add_argument('--log_path', type=str, default='./log/', help='log path')
