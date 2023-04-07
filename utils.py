@@ -53,8 +53,6 @@ def resume_load_model_checkpoint(net, ema_net, args):
 
     if args.ema:
         ema_net.load_state_dict(checkpoint['ema_model_state_dict'])
-        for p in ema_net.parameters():
-            p.requires_grad_(False)
 
 
 

@@ -44,6 +44,8 @@ from utils import (
     is_master,
     AverageMeter,
     ProgressMeter,
+    resume_load_optimizer_checkpoint,
+    resume_load_model_checkpoint,
 )
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -82,6 +84,10 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     writer = SummaryWriter(f"{args.log_path}{args.unique_name}/fold_{fold_idx}") if is_master(args) else None
 
     optimizer = get_optimizer(args, net)
+    
+    if args.resume:
+        resume_load_optimizer_checkpoint(optimizer, args)
+
 
     criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda())
     criterion_dl = DiceLoss()
@@ -94,7 +100,7 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     best_HD = np.ones(args.classes) * 1000
     best_ASD = np.ones(args.classes) * 1000
     
-    for epoch in range(args.epochs):
+    for epoch in range(args.start_epoch, args.epochs):
         train_sampler.set_epoch(epoch)
 
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
@@ -214,6 +220,7 @@ def get_parser():
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile to accelerate training, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--resume', action='store_true', help='if resume training from checkpoint')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='the path to save checkpoint and logging info')
     parser.add_argument('--log_path', type=str, default='./log/', help='the path to save tensorboard log')
@@ -242,15 +249,14 @@ def get_parser():
 def init_network(args):
     net = get_model(args, pretrain=args.pretrain)
 
-    if args.load:
-        net.load_state_dict(torch.load(args.load))
-        logging.info(f"Model loaded from {args.load}")
-
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
         logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
+
+    if args.resume:
+        resume_load_model_checkpoint(net, ema_net, args)
 
     if args.torch_compile:
         net = torch.compile(net)

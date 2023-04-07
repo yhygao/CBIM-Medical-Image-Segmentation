@@ -264,6 +264,8 @@ def init_network(args):
     
     if args.resume:
         resume_load_model_checkpoint(net, ema_net, args)
+    
+    
 
     if args.torch_compile:
         net = torch.compile(net, mode='max-autotune', fullgraph=True)
