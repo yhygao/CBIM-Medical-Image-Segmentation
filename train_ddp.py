@@ -112,6 +112,26 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
         ##################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net
+        
+        if is_master(args):
+            # save the latest checkpoint, including net, ema_net, and optimizer
+            net_state_dict = net.module if args.distributed else net
+            net_state_dict = net_state_dict._orig_mod.state_dict() if args.torch_compile else net_state_dict.state_dict()
+            if args.ema:
+                if args.distributed:
+                    ema_net_state_dict = ema_net.module.state_dict()
+                else:
+                    ema_net_state_dict = ema_net.state_dict()
+            else:
+                ema_net_state_dict = None
+
+            torch.save({
+                'epoch': epoch+1,
+                'model_state_dict': net_state_dict,
+                'ema_model_state_dict': ema_net_state_dict,
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
+
         if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
@@ -124,7 +144,23 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
                     best_HD = HD_list_test
                     best_ASD = ASD_list_test
 
-                    torch.save(net_for_eval.module.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                # Save the checkpoint with best performance
+                net_state_dict = net.module if args.distributed else net
+                net_state_dict = net_state_dict._orig_mod.state_dict() if args.torch_compile else net_state_dict.state_dict()
+                if args.ema:
+                    if args.distributed:
+                        ema_net_state_dict = ema_net.module.state_dict()
+                    else:
+                        ema_net_state_dict = ema_net.state_dict()
+                else:
+                    ema_net_state_dict = None
+
+                torch.save({
+                    'epoch': epoch+1,
+                    'model_state_dict': net_state_dict,
+                    'ema_model_state_dict': ema_net_state_dict,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
 
                 logging.info("Evaluation Done")
                 logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")

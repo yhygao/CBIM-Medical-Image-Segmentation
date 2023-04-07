@@ -99,7 +99,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         # save the latest checkpoint, including net, ema_net, and optimizer
         torch.save({
             'epoch': epoch+1,
-            'model_state_dict': net.state_dict(),
+            'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
             'ema_model_state_dict': ema_net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
         }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
@@ -118,7 +118,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                 # Save the checkpoint with best performance
                 torch.save({
                     'epoch': epoch+1,
-                    'model_state_dict': net.state_dict(),
+                    'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
                     'ema_model_state_dict': ema_net.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
@@ -268,7 +268,7 @@ def init_network(args):
     
 
     if args.torch_compile:
-        net = torch.compile(net, mode='max-autotune', fullgraph=True)
+        net = torch.compile(net)
     return net, ema_net 
 
 
