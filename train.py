@@ -43,8 +43,6 @@ import types
 import collections
 from random import shuffle
 
-from nvidia.dali.plugin.pytorch import DALIGenericIterator
-
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -128,17 +126,11 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
     tic = time.time()
     iter_num_per_epoch = 0 
     for i, inputs in enumerate(trainLoader):
-        if args.dataloader == 'pytorch':
-            img, label = inputs[0], inputs[1].long()
-            if args.aug_device != 'gpu':
-                img = img.cuda(non_blocking=True)
-                label = label.cuda(non_blocking=True)
+        img, label = inputs[0], inputs[1].long()
+        if args.aug_device != 'gpu':
+            img = img.cuda(non_blocking=True)
+            label = label.cuda(non_blocking=True)
 
-        elif args.dataloader == 'dali':
-            img, label = inputs[0]["data"], inputs[0]["label"]
-            img = img.cuda()
-            label = label.cuda().long()
-        
     
         # uncomment this for visualize the input images and labels for debug
         '''

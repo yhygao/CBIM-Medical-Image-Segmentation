@@ -95,8 +95,7 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     best_ASD = np.ones(args.classes) * 1000
     
     for epoch in range(args.epochs):
-        if args.distributed and args.dataloader == 'pytorch':
-            train_sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
 
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
@@ -143,14 +142,9 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
     tic = time.time()
     iter_num_per_epoch = 0
     for i, inputs in enumerate(trainLoader):
-        if args.dataloader == 'pytorch':
-            img, label = inputs[0], inputs[1]
-            img = img.cuda(args.proc_idx, non_blocking=True)
-            label = label.cuda(args.proc_idx, non_blocking=True).long()
-        elif args.dataloader == 'dali':
-            img, label = inputs[0]["data"], inputs[0]["label"]
-            img = img.cuda(args.proc_idx, non_blocking=True)
-            label = label.cuda(args.proc_idx, non_blocking=True).long()
+        img, label = inputs[0], inputs[1]
+        img = img.cuda(args.proc_idx, non_blocking=True)
+        label = label.cuda(args.proc_idx, non_blocking=True).long()
        
         step = i + epoch * len(trainLoader) # global steps
         
@@ -220,7 +214,6 @@ def get_parser():
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile to accelerate training, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
-    parser.add_argument('--dataloader', default='pytorch', type=str, help='use pytorch or DALI loader')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='the path to save checkpoint and logging info')
     parser.add_argument('--log_path', type=str, default='./log/', help='the path to save tensorboard log')
