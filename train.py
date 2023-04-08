@@ -79,7 +79,11 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
     criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
     criterion_dl = DiceLoss()
+    
+    scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
+    ################################################################################
+    # Start training
     best_Dice = np.zeros(args.classes)
     best_HD = np.ones(args.classes) * 1000
     best_ASD = np.ones(args.classes) * 1000
@@ -90,7 +94,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
         logging.info(f"Current lr: {exp_scheduler:.4e}")
         
-        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args)
+        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args)
         
         ########################################################################################
         # Evaluation, save checkpoint and log training info
@@ -131,7 +135,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     return best_Dice, best_HD, best_ASD
 
 
-def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args):
+def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args):
     batch_time = AverageMeter("Time", ":6.2f")
     epoch_loss = AverageMeter("Loss", ":.2f")
     progress = ProgressMeter(
@@ -180,19 +184,36 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
         step = i + epoch * len(trainLoader) # global steps
     
         optimizer.zero_grad()
+        
+        if args.amp:
+            with torch.autocast(device_type='cuda', dtype=torch.float16):
+                result = net(img)
 
-        result = net(img)
-        loss = 0 
-        if isinstance(result, tuple) or isinstance(result, list):
-            # If use deep supervision, add all loss together 
-            for j in range(len(result)):
-                loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+                loss = 0
+
+                if isinstance(result, tuple) or isinstance(result, list):
+                    # if use deep supervision, add all loss together
+                    for j in range(len(result)):
+                        loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+                else:
+                    loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
         else:
-            loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+            result = net(img)
+            loss = 0 
+            if isinstance(result, tuple) or isinstance(result, list):
+                # If use deep supervision, add all loss together 
+                for j in range(len(result)):
+                    loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+            else:
+                loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
 
 
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
         if args.ema:
             update_ema_variables(net, ema_net, args.ema_alpha, step)
 
@@ -222,6 +243,7 @@ def get_parser():
     parser.add_argument('--model', type=str, default='unet', help='model name')
     parser.add_argument('--dimension', type=str, default='2d', help='2d model or 3d model')
     parser.add_argument('--pretrain', action='store_true', help='if use pretrained weight for init')
+    parser.add_argument('--amp', action='store_true', help='if use the automatic mixed precision for faster training')
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')

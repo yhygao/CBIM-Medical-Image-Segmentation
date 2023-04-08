@@ -25,7 +25,8 @@ from training.utils import (
     exp_lr_scheduler_with_warmup, 
     log_evaluation_result, 
     get_optimizer, 
-    filter_validation_results
+    filter_validation_results,
+    unwrap_model_checkpoint,
 )
 import yaml
 import argparse
@@ -115,15 +116,7 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
         
         if is_master(args):
             # save the latest checkpoint, including net, ema_net, and optimizer
-            net_state_dict = net.module if args.distributed else net
-            net_state_dict = net_state_dict._orig_mod.state_dict() if args.torch_compile else net_state_dict.state_dict()
-            if args.ema:
-                if args.distributed:
-                    ema_net_state_dict = ema_net.module.state_dict()
-                else:
-                    ema_net_state_dict = ema_net.state_dict()
-            else:
-                ema_net_state_dict = None
+            net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
 
             torch.save({
                 'epoch': epoch+1,
@@ -145,15 +138,7 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
                     best_ASD = ASD_list_test
 
                 # Save the checkpoint with best performance
-                net_state_dict = net.module if args.distributed else net
-                net_state_dict = net_state_dict._orig_mod.state_dict() if args.torch_compile else net_state_dict.state_dict()
-                if args.ema:
-                    if args.distributed:
-                        ema_net_state_dict = ema_net.module.state_dict()
-                    else:
-                        ema_net_state_dict = ema_net.state_dict()
-                else:
-                    ema_net_state_dict = None
+                net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
 
                 torch.save({
                     'epoch': epoch+1,

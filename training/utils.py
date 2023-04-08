@@ -27,6 +27,19 @@ def log_evaluation_result(writer, dice_list, ASD_list, HD_list, name, epoch, arg
     for idx in range(C):
         writer.add_scalar('HD/%s_HD%d'%(name, idx+1), HD_list[idx], epoch+1)
 
+def unwrap_model_checkpoint(net, ema_net, args):
+    net_state_dict = net.module if args.distributed else net 
+    net_state_dict = net_state_dict._orig_mod.state_dict() if args.torch_compile else net_state_dict.state_dict()
+    if args.ema:
+        if args.distributed:
+            ema_net_state_dict = ema_net.module.state_dict()
+        else:   
+            ema_net_state_dict = ema_net.state_dict()
+    else:       
+        ema_net_state_dict = None 
+
+    return net_state_dict, ema_net_state_dict
+
 def filter_validation_results(dice_list, ASD_list, HD_list, args):
     if args.dataset == 'amos_mr':
         # the validation set of amos_mr doesn't have the last two organs, so elimiate them
