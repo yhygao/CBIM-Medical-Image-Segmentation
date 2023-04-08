@@ -14,10 +14,11 @@ block: BasicBlock
 norm: in
 
 #TRAIN
-epochs: 300
+epochs: 200
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
+aug_device: 'gpu'
 
 split_seed: 0
 k_fold: 1
@@ -37,13 +38,13 @@ affine_pad_size: [40, 40, 40]
 gaussian_noise_std: 0.02
 
 print_freq: 5
-iter_per_epoch: 500
+iter_per_epoch: 80
 
 
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 50
+val_freq: 20
 
 
 
@@ -62,6 +63,3 @@ dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
 
-# dataloader
-num_threads: 4
-aug_device: 'gpu'

@@ -18,6 +18,8 @@ epochs: 300
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
+aug_device: 'gpu'
+
 
 split_seed: 0
 k_fold: 5
