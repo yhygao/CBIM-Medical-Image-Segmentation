@@ -314,7 +314,7 @@ def crop_2d(tensor_img, tensor_lab, crop_size, mode):
     cropped_img = tensor_img[:, :, rand_x:rand_x+crop_size[0], rand_y:rand_y+crop_size[1]]
     cropped_lab = tensor_lab[:, :, rand_x:rand_x+crop_size[0], rand_y:rand_y+crop_size[1]]
 
-    return cropped_img.contiguous(), cropped_lab.congiguous()
+    return cropped_img.contiguous(), cropped_lab.contiguous()
 
 
 def crop_3d(tensor_img, tensor_lab, crop_size, mode):

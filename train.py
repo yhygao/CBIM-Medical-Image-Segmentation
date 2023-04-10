@@ -104,7 +104,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         torch.save({
             'epoch': epoch+1,
             'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
-            'ema_model_state_dict': ema_net.state_dict(),
+            'ema_model_state_dict': ema_net.state_dict() if args.ema else None,
             'optimizer_state_dict': optimizer.state_dict(),
         }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
    
@@ -123,7 +123,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                 torch.save({
                     'epoch': epoch+1,
                     'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
-                    'ema_model_state_dict': ema_net.state_dict(),
+                    'ema_model_state_dict': ema_net.state_dict() if args.ema else None,
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
             
@@ -299,6 +299,8 @@ if __name__ == '__main__':
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     torch.multiprocessing.set_start_method('spawn')
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    
     args.log_path = args.log_path + '%s/'%args.dataset
     
 

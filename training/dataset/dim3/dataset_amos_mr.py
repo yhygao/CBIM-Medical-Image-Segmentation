@@ -164,39 +164,3 @@ class AMOSDataset(Dataset):
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
 
-
-    def getitem_dali(self, idx):
-        
-        #print(self.args.proc_idx, os.getpid(), idx)
-        idx = idx % len(self.img_list)
-        
-        tensor_img = self.img_list[idx]
-        tensor_lab = self.lab_list[idx]
-
-
-        tensor_img = tensor_img.unsqueeze(3).float() # DHWC
-        tensor_lab = tensor_lab.unsqueeze(3).to(torch.int32) # DHWC
-        # cuda or not depends on the device, if gpu, and parallel is true, then no_copy is true, need to be cuda
-        # else is fine on cpu
-        if self.args.aug_device == 'cpu':
-            return tensor_img, tensor_lab
-        elif self.args.aug_device == 'gpu':
-            return tensor_img.cuda(self.args.proc_idx), tensor_lab.cuda(self.args.proc_idx)
-    
-    #@staticmethod
-    @pipeline_def
-    def dali_pipeline(self, dataset, bs, device='cpu', shard_id=0, num_shards=1):
-        # need to add gamma, and pass arguments into affine
-        img, lab = fn.external_source(source=DALIInputCallable(dataset, bs, shard_id, num_shards), num_outputs=2, batch=False,
-                layout=['DHWC', 'DHWC'], dtype=[types.FLOAT, types.INT32], parallel=True, device=device)
-        img = augmentation_dali.brightness(img, additive_range=(-0.1, 0.1), multiply_range=(0.7, 1.3), p=0.2)
-        img = augmentation_dali.contrast(img, contrast_range=(0.65, 1.5), p=0.2)
-        img = augmentation_dali.gaussian_blur(img, sigma_range=(0.5, 1.0), p=0.2)
-        img = augmentation_dali.gaussian_noise(img, std=0.1, p=0.2)
-        
-        img, lab = augmentation_dali.random_affine_crop_3d(img, lab, p=0.2, window_size=self.args.training_size, pad_size=self.args.affine_pad_size)
-        
-        img = fn.crop_mirror_normalize(img, output_layout='CDHW')
-        lab = fn.crop_mirror_normalize(lab, output_layout='CDHW')
-
-        return img, lab 

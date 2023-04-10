@@ -37,7 +37,7 @@ def get_model(args, pretrain=False):
             from .dim2 import MedFormer
             if pretrain:
                 raise ValueError('No pretrain model available')
-            return MedFormer(args.in_chan, args.classes, args.base_chan, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.GELU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, aux_loss=args.aux_loss)
+            return MedFormer(args.in_chan, args.classes, args.base_chan, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.ReLU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, aux_loss=args.aux_loss)
 
 
         elif args.model == 'transunet':
@@ -58,7 +58,7 @@ def get_model(args, pretrain=False):
             from .dim2 import SwinUnet
             from .dim2.swin_unet import SwinUnet_config
             config = SwinUnet_config()
-            net = SwinUnet(config, img_size=224, num_classes=args.classes, feature_size=args.base_chan)
+            net = SwinUnet(config, img_size=224, num_classes=args.classes)
             
             if pretrain:
                 net.load_from(args.init_model)

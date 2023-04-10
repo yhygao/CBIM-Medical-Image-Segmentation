@@ -35,7 +35,7 @@ class Mlp(nn.Module):
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
         super().__init__()
-        self.norm = nn.LayerNorm(dim, eps=1e-4)
+        self.norm = nn.LayerNorm(dim)
         self.fn = fn
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
@@ -124,7 +124,7 @@ class LayerNorm(nn.Module):
     with shape (batch_size, channels, height, width).
     """
 
-    def __init__(self, normalized_shape, eps=1e-6, data_format="channels_first"):
+    def __init__(self, normalized_shape, eps=1e-5, data_format="channels_first"):
         super().__init__()
 
         self.weight = nn.Parameter(torch.ones(normalized_shape))

@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_2d
+data_root: /research/cbim/medical/yg397/ACDC_2d
 classes: 4
 modality: mri
 
@@ -13,6 +13,7 @@ epochs: 150
 training_size: [256, 256]    # training crop size
 start_epoch: 0
 num_workers: 4
+aug_device: 'cpu'
 
 split_seed: 0  # random seed for train/test split (shuffle) before setting cross validation fold
 k_fold: 5 # number of folds in cross validation

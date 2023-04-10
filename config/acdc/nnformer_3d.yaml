@@ -14,6 +14,8 @@ epochs: 150
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
 num_workers: 2
+aug_device: 'cpu'
+
 aux_loss: True
 aux_weight: [0.2, 0.3, 0.5]
 

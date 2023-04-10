@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_3d
+data_root: /filer/tmp1/yg397/dataset/acdc/acdc_3d
 classes: 4
 modality: MRI
 
@@ -17,6 +17,7 @@ start_epoch: 0
 aux_loss: False
 aux_weight: [1, 0.1, 0.1, 0.1]
 num_workers: 2
+aug_device: 'cpu'
 
 split_seed: 0
 k_fold: 5

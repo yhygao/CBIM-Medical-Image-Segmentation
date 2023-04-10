@@ -109,8 +109,8 @@ class BidirectionAttentionBlock(nn.Module):
         assert act in [nn.ReLU, nn.ReLU6, nn.GELU, nn.SiLU, True, False]
         assert proj_type in ['linear', 'depthwise']
 
-        self.norm1 = norm(feat_dim, eps=1e-4) if norm else nn.Identity() # norm layer for feature map
-        self.norm2 = norm(map_dim, eps=1e-4) if norm else nn.Identity() # norm layer for semantic map
+        self.norm1 = norm(feat_dim) if norm else nn.Identity() # norm layer for feature map
+        self.norm2 = norm(map_dim) if norm else nn.Identity() # norm layer for semantic map
         
         self.attn = BidirectionAttention(feat_dim, map_dim, out_dim, heads, dim_head, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, kernel_size=kernel_size, no_map_out=no_map_out)
 
@@ -155,7 +155,7 @@ class PatchMerging(nn.Module):
         else:
             self.reduction = DepthwiseSeparableConv(merged_dim, out_dim, kernel_size=kernel_size)
 
-        self.norm = norm(merged_dim, eps=1e-4)
+        self.norm = norm(merged_dim)
 
     def forward(self, x):
         """
