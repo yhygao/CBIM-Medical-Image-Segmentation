@@ -7,14 +7,14 @@ modality: CT
 #MODEL
 arch: nnformer
 in_chan: 1
-base_chan: 24
+base_chan: 48
 
 #TRAIN
 epochs: 200
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
-aug_device: 'gpu'
+aug_device: 'cpu'
 
 aux_loss: True
 aux_weight: [0.2, 0.3, 0.5]

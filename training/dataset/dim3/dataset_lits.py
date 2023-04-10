@@ -113,8 +113,9 @@ class LiverDataset(Dataset):
 
 
         if self.mode == 'train':
-            tensor_img = tensor_img.cuda(self.args.proc_idx)
-            tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+            if self.args.aug_device == 'gpu':
+                tensor_img = tensor_img.cuda(self.args.proc_idx)
+                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
 
             d, h, w = self.args.training_size
 
