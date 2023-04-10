@@ -16,7 +16,12 @@ from torch.utils.tensorboard import SummaryWriter
 from training.utils import update_ema_variables
 from training.losses import DiceLoss
 from training.validation import validation
-from training.utils import exp_lr_scheduler_with_warmup, log_evaluation_result, get_optimizer
+from training.utils import (
+    exp_lr_scheduler_with_warmup, 
+    log_evaluation_result, 
+    get_optimizer, 
+    filter_validation_results
+)
 import yaml
 import argparse
 import time
@@ -32,7 +37,14 @@ from utils import (
     save_configure,
     AverageMeter,
     ProgressMeter,
+    resume_load_optimizer_checkpoint,
+    resume_load_model_checkpoint,
 )
+
+import types
+import collections
+from random import shuffle
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -41,10 +53,18 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     ################################################################################
     # Dataset Creation
     trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
-    trainLoader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=8)
+    
+    trainLoader = data.DataLoader(
+        trainset, 
+        batch_size=args.batch_size,
+        shuffle=True, 
+        pin_memory=(args.aug_device != 'gpu'), 
+        num_workers=args.num_workers, 
+        persistent_workers=(args.num_workers>0)
+    )
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
-    testLoader = data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+    testLoader = data.DataLoader(testset, batch_size=1, pin_memory=True, shuffle=False, num_workers=2)
     
     logging.info(f"Created Dataset and DataLoader")
 
@@ -54,28 +74,44 @@ def train_net(net, args, ema_net=None, fold_idx=0):
 
     optimizer = get_optimizer(args, net)
 
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda())
-    criterion_dl = DiceLoss()
+    if args.resume:
+        resume_load_optimizer_checkpoint(optimizer, args)
 
+    criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
+    criterion_dl = DiceLoss()
+    
+    scaler = torch.cuda.amp.GradScaler() if args.amp else None
+
+    ################################################################################
+    # Start training
     best_Dice = np.zeros(args.classes)
     best_HD = np.ones(args.classes) * 1000
     best_ASD = np.ones(args.classes) * 1000
 
     
-    for epoch in range(args.epochs):
+    for epoch in range(args.start_epoch, args.epochs):
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
         logging.info(f"Current lr: {exp_scheduler:.4e}")
         
-        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args)
+        train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args)
         
         ########################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net 
         
+        # save the latest checkpoint, including net, ema_net, and optimizer
+        torch.save({
+            'epoch': epoch+1,
+            'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
+            'ema_model_state_dict': ema_net.state_dict() if args.ema else None,
+            'optimizer_state_dict': optimizer.state_dict(),
+        }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
+   
         if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
+            dice_list_test, ASD_list_test, HD_list_test = filter_validation_results(dice_list_test, ASD_list_test, HD_list_test, args) # filter results for some dataset, e.g. amos_mr
             log_evaluation_result(writer, dice_list_test, ASD_list_test, HD_list_test, 'test', epoch, args)
             
             if dice_list_test.mean() >= best_Dice.mean():
@@ -83,7 +119,13 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                 best_HD = HD_list_test
                 best_ASD = ASD_list_test
 
-                torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                # Save the checkpoint with best performance
+                torch.save({
+                    'epoch': epoch+1,
+                    'model_state_dict': net.state_dict() if not args.torch_compile else net._orig_mod.state_dict(),
+                    'ema_model_state_dict': ema_net.state_dict() if args.ema else None,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
             
             logging.info("Evaluation Done")
             logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
@@ -93,7 +135,7 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     return best_Dice, best_HD, best_ASD
 
 
-def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, args):
+def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, criterion_dl, scaler, args):
     batch_time = AverageMeter("Time", ":6.2f")
     epoch_loss = AverageMeter("Loss", ":.2f")
     progress = ProgressMeter(
@@ -106,43 +148,79 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
 
     tic = time.time()
     iter_num_per_epoch = 0 
-    for i, (img, label) in enumerate(trainLoader):
-    
-        ''' 
-        # uncomment this for visualize the input images and labels for debug
-        for idx in range(img.shape[0]):
-            plt.subplot(1,2,1)
-            plt.imshow(img[idx, 0, 40, :, :].numpy())
-            plt.subplot(1,2,2)
-            plt.imshow(label[idx, 0, 40, :, :].numpy())
+    for i, inputs in enumerate(trainLoader):
+        img, label = inputs[0], inputs[1].long()
+        if args.aug_device != 'gpu':
+            img = img.cuda(non_blocking=True)
+            label = label.cuda(non_blocking=True)
 
-            plt.show()
+    
+        # uncomment this for visualize the input images and labels for debug
         '''
-        img = img.cuda(non_blocking=True)
-        label = label.cuda(non_blocking=True)
+        img = img.cpu()
+        print(img.mean())
+        label = label.cpu()
+        for idx in range(img.shape[0]):
+            plt.subplot(3,2,1)
+            plt.imshow(img[idx, 0, 64, :, :].numpy())
+            plt.subplot(3,2,2)
+            plt.imshow(label[idx, 0, 64, :, :].numpy())
+            
+            plt.subplot(3,2,3)
+            plt.imshow(img[idx, 0, :, 64, :].cpu().numpy())
+            plt.subplot(3,2,4)
+            plt.imshow(label[idx, 0, :, 64, :].numpy())
+            
+            plt.subplot(3,2,5)
+            plt.imshow(img[idx, 0, :, :, 64].cpu().numpy())
+            plt.subplot(3,2,6)
+            plt.imshow(label[idx, 0, :, :, 64].numpy())
+           
+
+            plt.savefig('./result/PtranslateX_idx%d.png'%idx)
+
+            #plt.show()
+        '''
         step = i + epoch * len(trainLoader) # global steps
     
         optimizer.zero_grad()
+        
+        if args.amp:
+            with torch.autocast(device_type='cuda', dtype=torch.float16):
+                result = net(img)
 
-        result = net(img)
-        loss = 0 
-        if isinstance(result, tuple) or isinstance(result, list):
-            # If use deep supervision, add all loss together 
-            for j in range(len(result)):
-                loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+                loss = 0
+
+                if isinstance(result, tuple) or isinstance(result, list):
+                    # if use deep supervision, add all loss together
+                    for j in range(len(result)):
+                        loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+                else:
+                    loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
         else:
-            loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+            result = net(img)
+            loss = 0 
+            if isinstance(result, tuple) or isinstance(result, list):
+                # If use deep supervision, add all loss together 
+                for j in range(len(result)):
+                    loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
+            else:
+                loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
 
 
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
         if args.ema:
             update_ema_variables(net, ema_net, args.ema_alpha, step)
 
         epoch_loss.update(loss.item(), img.shape[0])
         batch_time.update(time.time() - tic)
         tic = time.time()
-
+        
         if i % args.print_freq == 0:
             progress.display(i)
 
@@ -151,7 +229,6 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
             if iter_num_per_epoch > args.iter_per_epoch:
                 break
 
-        #torch.cuda.empty_cache()
 
         writer.add_scalar('Train/Loss', epoch_loss.avg, epoch+1)
 
@@ -166,8 +243,11 @@ def get_parser():
     parser.add_argument('--model', type=str, default='unet', help='model name')
     parser.add_argument('--dimension', type=str, default='2d', help='2d model or 3d model')
     parser.add_argument('--pretrain', action='store_true', help='if use pretrained weight for init')
+    parser.add_argument('--amp', action='store_true', help='if use the automatic mixed precision for faster training')
+    parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--resume', action='store_true', help='if resume training from checkpoint')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='checkpoint path')
     parser.add_argument('--log_path', type=str, default='./log/', help='log path')
@@ -196,10 +276,6 @@ def get_parser():
 def init_network(args):
     net = get_model(args, pretrain=args.pretrain)
 
-    if args.load:
-        net.load_state_dict(torch.load(args.load))
-        logging.info('Model loaded from {}'.format(args.load))
-
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
         for p in ema_net.parameters():
@@ -207,6 +283,14 @@ def init_network(args):
         logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
+    
+    if args.resume:
+        resume_load_model_checkpoint(net, ema_net, args)
+    
+    
+
+    if args.torch_compile:
+        net = torch.compile(net)
     return net, ema_net 
 
 
@@ -214,7 +298,11 @@ if __name__ == '__main__':
     
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    torch.multiprocessing.set_start_method('spawn')
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    
     args.log_path = args.log_path + '%s/'%args.dataset
+    
 
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .utils import split_idx
-
+import pdb
 
 
 def inference_whole_image(net, img, args=None):
@@ -36,7 +36,7 @@ def inference_sliding_window(net, img, args):
     net.eval()
 
     B, C, H, W = img.shape
-
+    
     win_h, win_w = args.window_size
 
     half_win_h = win_h // 2

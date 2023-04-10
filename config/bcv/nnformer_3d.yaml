@@ -1,0 +1,63 @@
+#DATA
+data_root: /filer/tmp1/yg397/dataset/bcv/bcv_3d 
+classes: 14
+modality: CT
+
+
+#MODEL
+arch: nnformer
+in_chan: 1
+base_chan: 24
+
+#TRAIN
+epochs: 150
+training_size: [128, 128, 128] # training crop size
+start_epoch: 0
+num_workers: 2
+aug_device: 'cpu'
+
+aux_loss: True
+aux_weight: [0.2,0.3,0.5]
+
+split_seed: 0
+k_fold: 5
+
+optimizer: adamw
+base_lr: 0.0006
+betas: [0.9, 0.999]
+weight_decay: 0.05  # weight decay of SGD optimizer
+weight: [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # weitght of each class in the loss function
+rlt: 1 # relation between CE and Dice loss
+
+scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
+rotate: [30, 30, 30] # rotation angle for data augmentation 
+translate: [0, 0, 0]
+gaussian_noise_std: 0.02
+
+print_freq: 5
+iter_per_epoch: 300
+
+
+#VALIDATION
+ema: True
+ema_alpha: 0.99
+val_freq: 10
+
+
+
+#INFERENCE
+sliding_window: True
+window_size: [128, 128, 128]
+
+
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true
+reproduce_seed: null

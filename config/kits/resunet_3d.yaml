@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/kits_3d
+data_root: /filer/tmp1/yg397/dataset/kits/kits_3d
 classes: 3
 modality: CT
 
@@ -17,7 +17,9 @@ norm: in
 epochs: 300
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
-num_workers: 4
+num_workers: 2
+aug_device: 'cpu'
+
 
 split_seed: 0
 k_fold: 5
@@ -32,6 +34,7 @@ rlt: 1 # relation between CE and Dice loss
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation  0.1 0.3 0.3
 rotate: [30, 30, 30] # rotation angle for data augmentation 
 translate: [0, 0, 0]
+affine_pad_size: [40, 40, 40]
 gaussian_noise_std: 0.02
 
 print_freq: 5
@@ -41,7 +44,7 @@ iter_per_epoch: 500
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 10
+val_freq: 20
 
 
 

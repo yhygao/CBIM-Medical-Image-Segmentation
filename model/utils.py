@@ -37,7 +37,7 @@ def get_model(args, pretrain=False):
             from .dim2 import MedFormer
             if pretrain:
                 raise ValueError('No pretrain model available')
-            return MedFormer(args.in_chan, args.classes, args.base_chan, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.GELU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop)
+            return MedFormer(args.in_chan, args.classes, args.base_chan, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, map_size=args.map_size, proj_type=args.proj_type, act=nn.ReLU, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, aux_loss=args.aux_loss)
 
 
         elif args.model == 'transunet':
@@ -92,7 +92,7 @@ def get_model(args, pretrain=False):
         elif args.model == 'medformer':
             from .dim3 import MedFormer
 
-            return MedFormer(args.in_chan, args.classes, args.base_chan, map_size=args.map_size, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, proj_type=args.proj_type, norm=args.norm, act=args.act, kernel_size=args.kernel_size, scale=args.down_scale)
+            return MedFormer(args.in_chan, args.classes, args.base_chan, map_size=args.map_size, conv_block=args.conv_block, conv_num=args.conv_num, trans_num=args.trans_num, num_heads=args.num_heads, fusion_depth=args.fusion_depth, fusion_dim=args.fusion_dim, fusion_heads=args.fusion_heads, expansion=args.expansion, attn_drop=args.attn_drop, proj_drop=args.proj_drop, proj_type=args.proj_type, norm=args.norm, act=args.act, kernel_size=args.kernel_size, scale=args.down_scale, aux_loss=args.aux_loss)
     
         elif args.model == 'unetr':
             from .dim3 import UNETR
@@ -106,7 +106,20 @@ def get_model(args, pretrain=False):
             if pretrain:
                 model.load_from(args)
             return model
-    
+        elif args.model == 'swin_unetr':
+            from .dim3 import SwinUNETR
+            model = SwinUNETR(args.window_size, args.in_chan, args.classes, feature_size=args.base_chan)
+
+            if args.pretrain:
+                weights = torch.load('/research/cbim/vast/yg397/ConvFormer/ConvFormer/initmodel/model_swinvit.pt')
+                model.load_from(weights=weights)
+
+            return model
+        elif args.model == 'nnformer':
+            from .dim3 import nnFormer
+            model = nnFormer(args.window_size, input_channels=args.in_chan, num_classes=args.classes, deep_supervision=args.aux_loss)
+
+            return model
     else:
         raise ValueError('Invalid dimension, should be \'2d\' or \'3d\'')
 

@@ -10,8 +10,28 @@ import pdb
 
 class MedFormer(nn.Module):
     
-    def __init__(self, in_chan, num_classes, base_chan=32, map_size=[4,8,8], 
-        conv_block='BasicBlock', conv_num=[2,1,0,0, 0,1,2,2], trans_num=[0,1,2,2, 2,1,0,0], chan_num=[64,128,256,320,256,128,64,32], num_heads=[1,4,8,16, 8,4,1,1], fusion_depth=2, fusion_dim=320, fusion_heads=4, expansion=4, attn_drop=0., proj_drop=0., proj_type='depthwise', norm='in', act='gelu', kernel_size=[3,3,3,3], scale=[2,2,2,2], aux_loss=False):
+    def __init__(self, 
+        in_chan, 
+        num_classes, 
+        base_chan=32, 
+        map_size=[4,8,8], 
+        conv_block='BasicBlock', 
+        conv_num=[2,1,0,0, 0,1,2,2], 
+        trans_num=[0,1,2,2, 2,1,0,0], 
+        chan_num=[64,128,256,320,256,128,64,32], 
+        num_heads=[1,4,8,16, 8,4,1,1], 
+        fusion_depth=2, 
+        fusion_dim=320, 
+        fusion_heads=4, 
+        expansion=4, attn_drop=0., 
+        proj_drop=0., 
+        proj_type='depthwise', 
+        norm='in', 
+        act='gelu', 
+        kernel_size=[3,3,3,3], 
+        scale=[2,2,2,2], 
+        aux_loss=False
+        ):
         super().__init__()
 
         if conv_block == 'BasicBlock':
@@ -38,7 +58,7 @@ class MedFormer(nn.Module):
 
         self.up1 = up_block(chan_num[3], chan_num[4], conv_num[4], trans_num[4], conv_block=conv_block, kernel_size=kernel_size[3], up_scale=scale[3], heads=num_heads[4], dim_head=dim_head[4], expansion=expansion, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, norm=norm, act=act, map_shortcut=True)
 
-        self.up2 = up_block(chan_num[4], chan_num[5], conv_num[5], trans_num[5], conv_block=conv_block, kernel_size=kernel_size[2], up_scale=scale[2], heads=num_heads[5], dim_head=dim_head[5], expansion=expansion, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, norm=norm, act=act, map_shortcut=True)
+        self.up2 = up_block(chan_num[4], chan_num[5], conv_num[5], trans_num[5], conv_block=conv_block, kernel_size=kernel_size[2], up_scale=scale[2], heads=num_heads[5], dim_head=dim_head[5], expansion=expansion, attn_drop=attn_drop, proj_drop=proj_drop, map_size=map_size, proj_type=proj_type, norm=norm, act=act, map_shortcut=True, no_map_out=True)
 
         self.up3 = up_block(chan_num[5], chan_num[6], conv_num[6], trans_num[6], conv_block=conv_block, kernel_size=kernel_size[1], up_scale=scale[1], norm=norm, act=act, map_shortcut=False)
 

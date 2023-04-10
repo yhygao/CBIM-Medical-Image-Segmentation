@@ -1,4 +1,4 @@
-
+import numpy as np
 
 def get_dataset(args, mode, **kwargs):
     
@@ -27,4 +27,22 @@ def get_dataset(args, mode, **kwargs):
             from .dim3.dataset_kits import KidneyDataset
 
             return KidneyDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+
+        elif args.dataset == 'amos_ct':
+            from .dim3.dataset_amos_ct import AMOSDataset
+
+            return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+
+        elif args.dataset == 'amos_mr':
+            from .dim3.dataset_amos_mr import AMOSDataset
+
+            return AMOSDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+
+        elif args.dataset == 'msd_lung':
+            from .dim3.dataset_msd_lung import LungDataset
+
+            return LungDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+            
+
+
 

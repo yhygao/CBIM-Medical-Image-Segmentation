@@ -8,4 +8,4 @@ exp/
 initmodel/
 result/
 *.swp
-prediction.py
+test*

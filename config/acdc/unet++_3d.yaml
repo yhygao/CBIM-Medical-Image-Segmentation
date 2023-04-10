@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_3d
+data_root: /filer/tmp1/yg397/dataset/acdc/acdc_3d
 classes: 4
 modality: mri
 
@@ -17,6 +17,8 @@ norm: in
 epochs: 200
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
+num_workers: 2
+aug_device: 'cpu'
 
 split_seed: 0
 k_fold: 5
@@ -49,3 +51,16 @@ val_freq: 10
 #INFERENCE
 sliding_window: True
 window_size: [16, 192, 192]
+
+
+
+# DDP
+world_size: 1
+proc_idx: 0
+rank: 0
+port: 10000
+dist_url: 'tcp://localhost:10000' # the port number here should be the same as the previous one
+dist_backend: "nccl"
+multiprocessing_distributed: true # if use PyTorch DDP for multi-gpu training 
+reproduce_seed: 2023
+

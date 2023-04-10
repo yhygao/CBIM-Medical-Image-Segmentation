@@ -76,8 +76,8 @@ class CMRDataset(Dataset):
 
     def preprocess(self, itk_img, itk_lab):
         
-        img = sitk.GetArrayFromImage(itk_img)
-        lab = sitk.GetArrayFromImage(itk_lab)
+        img = sitk.GetArrayFromImage(itk_img).astype(np.float32)
+        lab = sitk.GetArrayFromImage(itk_lab).astype(np.uint8)
 
         max98 = np.percentile(img, 98)
         img = np.clip(img, 0, max98)
@@ -133,6 +133,11 @@ class CMRDataset(Dataset):
 
 
         if self.mode == 'train':
+
+            if self.args.aug_device == 'gpu':
+                tensor_img = tensor_img.cuda(self.args.proc_idx)
+                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
+
             # Gaussian Noise
             tensor_img = augmentation.gaussian_noise(tensor_img, std=self.args.gaussian_noise_std)
             # Additive brightness
@@ -152,7 +157,7 @@ class CMRDataset(Dataset):
         assert tensor_img.shape == tensor_lab.shape
 
         if self.mode == 'train':
-            return tensor_img, tensor_lab
+            return tensor_img, tensor_lab.to(torch.int8)
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
 

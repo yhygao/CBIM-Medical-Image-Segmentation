@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_2d
+data_root: /research/cbim/medical/yg397/ACDC_2d
 classes: 4
 modality: mri
 
@@ -30,6 +30,7 @@ start_epoch: 0
 aux_loss: True
 aux_weight: [0.5, 0.5]
 num_workers: 4 # modify this if I/O or augmentation is slow
+aug_device: 'cpu'
 
 split_seed: 0 # random seed for train/test split (shuffle) before setting cross validation fold
 k_fold: 5 # number of folds in cross validation

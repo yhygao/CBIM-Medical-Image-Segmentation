@@ -20,7 +20,7 @@ def ResampleXYZAxis(imImage, space=(1., 1., 1.), interp=sitk.sitkLinear):
 
     return imOutImage
 
-def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkLinear):
+def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkNearestNeighbor):
     identity1 = sitk.Transform(3, sitk.sitkIdentity)
 
     imRefImage = sitk.Image(imRef.GetSize(), imLabel.GetPixelIDValue())
@@ -28,22 +28,40 @@ def ResampleLabelToRef(imLabel, imRef, interp=sitk.sitkLinear):
     imRefImage.SetOrigin(imRef.GetOrigin())
     imRefImage.SetDirection(imRef.GetDirection())
         
-    npLabel = sitk.GetArrayFromImage(imLabel)
-    labels = np.unique(npLabel)
-    resampled_nplabel_list = []
-    for idx in labels:
-        tmp_label = (npLabel == idx).astype(np.uint8)
-        tmp_imLabel = sitk.GetImageFromArray(tmp_label)
-        tmp_imLabel.CopyInformation(imLabel)
-        tmp_resampled_Label = sitk.Resample(tmp_imLabel, imRefImage, identity1, interp)
-        resampled_nplabel_list.append(sitk.GetArrayFromImage(tmp_resampled_Label))
+    ResampledLabel = sitk.Resample(imLabel, imRefImage, identity1, interp)
     
-    one_hot_resampled_label = np.stack(resampled_nplabel_list, axis=0)
-    resampled_label = np.argmax(one_hot_resampled_label, axis=0)
-    outLabel = sitk.GetImageFromArray(resampled_label.astype(np.uint8))
-    outLabel.CopyInformation(imRef)
+    return ResampledLabel
 
-    return outLabel
+
+
+def ITKReDirection(itkimg, target_direction=(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)):
+    # target direction should be orthognal, i.e. (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+
+    # permute axis
+    tmp_target_direction = np.abs(np.round(np.array(target_direction))).reshape(3,3).T
+    current_direction = np.abs(np.round(itkimg.GetDirection())).reshape(3,3).T
+    
+    permute_order = []
+    if not np.array_equal(tmp_target_direction, current_direction):
+        for i in range(3):
+            for j in range(3):
+                if np.array_equal(tmp_target_direction[i], current_direction[j]):
+                    permute_order.append(j)
+                    #print(i, j)
+                    #print(permute_order)
+                    break
+        redirect_img = sitk.PermuteAxes(itkimg, permute_order)
+    else:
+        redirect_img = itkimg
+    # flip axis
+    current_direction = np.round(np.array(redirect_img.GetDirection())).reshape(3,3).T
+    current_direction = np.max(current_direction, axis=1)
+
+    tmp_target_direction = np.array(target_direction).reshape(3,3).T 
+    tmp_target_direction = np.max(tmp_target_direction, axis=1)
+    flip_order = ((tmp_target_direction * current_direction) != 1)
+    fliped_img = sitk.Flip(redirect_img, [bool(flip_order[0]), bool(flip_order[1]), bool(flip_order[2])])
+    return fliped_img
 
 
 def CropForeground(imImage, imLabel, context_size=[10, 30, 30]):

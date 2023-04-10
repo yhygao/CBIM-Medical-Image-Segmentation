@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/lits_3d
+data_root: /filer/tmp1/yg397/dataset/lits/lits_3d
 classes: 3
 modality: CT
 
@@ -14,11 +14,11 @@ down_scale: [[2,2,2], [2,2,2], [2,2,2], [2,2,2]]
 kernel_size: [[3,3,3], [3,3,3], [3,3,3], [3,3,3], [3,3,3]]
 chan_num: [64, 128, 256, 320, 256, 128, 64, 32]
 norm: in
-act: gelu
+act: relu
 map_size: [4, 4, 4]
 conv_num: [2,0,0,0, 0,0,2,2]
 trans_num: [0,2,4,6, 4,2,0,0]
-num_heads: [1,4,8,10, 8,4,1,1]
+num_heads: [1,1,1,1, 1,1,1,1]
 expansion: 4
 fusion_depth: 2
 fusion_dim: 320
@@ -33,7 +33,9 @@ epochs: 200
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
-aux_loss: True
+aug_device: 'cpu'
+
+aux_loss: False
 aux_weight: [0.5, 0.5]
 
 split_seed: 0
@@ -50,6 +52,7 @@ rlt: 1 # relation between CE and Dice loss
 scale: [0.3, 0.3, 0.3]  # scale for data augmentation
 rotate: [30, 30, 30] # rotation angle for data augmentation 
 translate: [0, 0, 0]
+affine_pad_size: [50, 50, 50]
 gaussian_noise_std: 0.02
 
 print_freq: 5
@@ -79,3 +82,5 @@ dist_url: 'tcp://localhost:10000' # the port number here should be the same as t
 dist_backend: "nccl"
 multiprocessing_distributed: true
 reproduce_seed: null
+
+
