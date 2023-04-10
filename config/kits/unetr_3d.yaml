@@ -15,7 +15,7 @@ epochs: 400
 training_size: [96, 96, 96] # training crop size
 start_epoch: 0
 num_workers: 2
-aug_device: 'gpu'
+aug_device: 'cpu'
 
 split_seed: 0
 k_fold: 5
@@ -40,7 +40,7 @@ iter_per_epoch: 500
 #VALIDATION
 ema: False
 ema_alpha: 0.99
-val_freq: 100
+val_freq: 20
 
 
 
