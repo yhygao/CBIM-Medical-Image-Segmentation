@@ -11,7 +11,7 @@ in_chan: 1
 patch_size: [4, 4, 4]
 
 #TRAIN
-epochs: 300
+epochs: 400
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2

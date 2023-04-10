@@ -14,11 +14,11 @@ block: BasicBlock
 norm: in
 
 #TRAIN
-epochs: 300
+epochs: 400
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
-aug_device: 'gpu' # 'cpu' or 'gpu' for both pytorch and DALI dataloader. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
+aug_device: 'cpu' # 'cpu' or 'gpu' for both pytorch and DALI dataloader. 'gpu' augmentation will consume more GPU memory, but much faster for 3D inputs
 
 split_seed: 0
 k_fold: 1

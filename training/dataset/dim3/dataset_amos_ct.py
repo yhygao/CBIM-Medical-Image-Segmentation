@@ -80,11 +80,7 @@ class AMOSDataset(Dataset):
 
         z, y, x = img.shape
         
-        # pad if the image size is smaller than trainig size
-        if self.args.dataloader == 'dali':
-            pad_size = [i+j for i,j in zip(self.args.training_size, self.args.affine_pad_size)]
-        else:
-            pad_size = self.args.training_size
+        pad_size = self.args.training_size
 
         if z < pad_size[0]:
             diff = int(math.ceil((pad_size[0] - z) / 2))
