@@ -4,12 +4,12 @@ This repo is a PyTorch-based framework for medical image segmentation, whose goa
 evaluate deep learning models. It provides fair evaluation and comparison of CNNs and Transformers on multiple medical image datasets. 
 
 ### News
-We've released a new version paper of MedFormer, including more experiments and analysis, see in [MedFormer](https://arxiv.org/abs/2203.00131)
 Detail updates can be found in docs/change.md
 
-**Support using GPU to conduct data augmentation for faster training**
+- ** Support PyTorch 2.0 (April 10, 2023). Detail tutorial is comming soon.**
+- **Support using GPU to conduct data augmentation for faster training**
+- **We update a revised version of [MedFormer](https://arxiv.org/abs/2203.00131) paper, including more experiments and analysis. (April 5, 2023)** 
 - **Support AMOS22 dataset. (Feb. 16, 2023)**
-- **Add results of each dataset trained with our repo: [Sheet](https://docs.google.com/spreadsheets/d/1f5JjMURX-HwdYETnRgZssWjf17mbnMfbVDe8aYYiLMY/edit?usp=sharing). (Feb. 16, 2023)**
 - **Support KiTS19 dataset. (Feb. 10, 2023)**
 - **Support PyTorch DDP and AMP training. (Dec. 19. 2022)**
 - **Add a tutorial on the usage of this repo: docs/tutorial.md (Still updating, Dec. 19. 2022)**
@@ -32,6 +32,8 @@ Detail updates can be found in docs/change.md
 - [SwinUNet](https://arxiv.org/abs/2105.05537)
 - [UNETR](https://arxiv.org/abs/2103.10504)
 - [VT-UNet](https://arxiv.org/pdf/2111.13300.pdf)
+- [nnFormer](https://arxiv.org/abs/2109.03201)
+- [SwinUNETR](https://arxiv.org/abs/2201.01266)
 - More models are comming soon ... 
 
 ### Supporting Datasets
