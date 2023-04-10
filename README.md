@@ -6,7 +6,7 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 ### News
 Detail updates can be found in docs/change.md
 
-- ** Support PyTorch 2.0 (April 10, 2023). Detail tutorial is comming soon.**
+- **Support PyTorch 2.0 (April 10, 2023). Detail tutorial is comming soon.**
 - **Support using GPU to conduct data augmentation for faster training**
 - **We update a revised version of [MedFormer](https://arxiv.org/abs/2203.00131) paper, including more experiments and analysis. (April 5, 2023)** 
 - **Support AMOS22 dataset. (Feb. 16, 2023)**
