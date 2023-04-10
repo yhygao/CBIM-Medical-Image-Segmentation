@@ -23,6 +23,7 @@ def get_norm(name):
 def get_act(name):
     act_map = {
         'relu': nn.ReLU,
+        'lrelu': nn.LeakyReLU,
         'gelu': nn.GELU,
         'swish': nn.SiLU
     }

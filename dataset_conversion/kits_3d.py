@@ -50,8 +50,8 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
 if __name__ == '__main__':
 
 
-    src_path = '/research/cbim/medical/yg397/KiTS/kits19/data/'
-    tgt_path = '/research/cbim/medical/yg397/KiTS/kits_3d/'
+    src_path = '/filer/tmp1/yg397/dataset/kits/kits19/data/'
+    tgt_path = '/filer/tmp1/yg397/dataset/kits/kits_3d/'
 
     
     name_list = []

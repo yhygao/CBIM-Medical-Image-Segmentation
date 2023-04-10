@@ -21,7 +21,13 @@ from torch.utils.data.distributed import DistributedSampler
 from training.utils import update_ema_variables
 from training.losses import DiceLoss
 from training.validation import validation_ddp as validation
-from training.utils import exp_lr_scheduler_with_warmup, log_evaluation_result, get_optimizer
+from training.utils import (
+    exp_lr_scheduler_with_warmup, 
+    log_evaluation_result, 
+    get_optimizer, 
+    filter_validation_results,
+    unwrap_model_checkpoint,
+)
 import yaml
 import argparse
 import time
@@ -32,38 +38,36 @@ import warnings
 import matplotlib.pyplot as plt
 import copy
 
+
 from utils import (
     configure_logger,
     save_configure,
     is_master,
     AverageMeter,
     ProgressMeter,
+    resume_load_optimizer_checkpoint,
+    resume_load_model_checkpoint,
 )
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
 
 
-def train_net(net, args, ema_net=None, fold_idx=0):
+def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
     
     ########################################################################################
-    # Dataset Creation
-    
-    trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+    # Dataloader Creation
     train_sampler = DistributedSampler(trainset) if args.distributed else None
-
     trainLoader = data.DataLoader(
         trainset, 
-        batch_size=args.batch_size, 
+        batch_size=args.batch_size,
         shuffle=(train_sampler is None),
         sampler=train_sampler,
-        pin_memory=True,
+        pin_memory=(args.aug_device != 'gpu'),
         num_workers=args.num_workers,
-        persistent_workers=True,
+        persistent_workers=(args.num_workers>0),
     )
     
-    
-    testset = get_dataset(args, mode='test', fold_idx=fold_idx)
     test_sampler = DistributedSampler(testset) if args.distributed else None
     testLoader = data.DataLoader(
         testset,
@@ -81,6 +85,10 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     writer = SummaryWriter(f"{args.log_path}{args.unique_name}/fold_{fold_idx}") if is_master(args) else None
 
     optimizer = get_optimizer(args, net)
+    
+    if args.resume:
+        resume_load_optimizer_checkpoint(optimizer, args)
+
 
     criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda())
     criterion_dl = DiceLoss()
@@ -93,9 +101,8 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     best_HD = np.ones(args.classes) * 1000
     best_ASD = np.ones(args.classes) * 1000
     
-    for epoch in range(args.epochs):
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
+    for epoch in range(args.start_epoch, args.epochs):
+        train_sampler.set_epoch(epoch)
 
         logging.info(f"Starting epoch {epoch+1}/{args.epochs}")
         exp_scheduler = exp_lr_scheduler_with_warmup(optimizer, init_lr=args.base_lr, epoch=epoch, warmup_epoch=5, max_epoch=args.epochs)
@@ -106,10 +113,23 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         ##################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net
+        
+        if is_master(args):
+            # save the latest checkpoint, including net, ema_net, and optimizer
+            net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
+
+            torch.save({
+                'epoch': epoch+1,
+                'model_state_dict': net_state_dict,
+                'ema_model_state_dict': ema_net_state_dict,
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_latest.pth")
+
         if (epoch+1) % args.val_freq == 0:
 
             dice_list_test, ASD_list_test, HD_list_test = validation(net_for_eval, testLoader, args)
             if is_master(args):
+                dice_list_test, ASD_list_test, HD_list_test = filter_validation_results(dice_list_test, ASD_list_test, HD_list_test, args) # filter results for some dataset, e.g. amos_mr
                 log_evaluation_result(writer, dice_list_test, ASD_list_test, HD_list_test, 'test', epoch, args)
             
                 if dice_list_test.mean() >= best_Dice.mean():
@@ -117,7 +137,15 @@ def train_net(net, args, ema_net=None, fold_idx=0):
                     best_HD = HD_list_test
                     best_ASD = ASD_list_test
 
-                    torch.save(net_for_eval.state_dict(), f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                # Save the checkpoint with best performance
+                net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
+
+                torch.save({
+                    'epoch': epoch+1,
+                    'model_state_dict': net_state_dict,
+                    'ema_model_state_dict': ema_net_state_dict,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
 
                 logging.info("Evaluation Done")
                 logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
@@ -140,20 +168,11 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
 
     tic = time.time()
     iter_num_per_epoch = 0
-    for i, (img, label) in enumerate(trainLoader):
-        
-        '''
-        # uncomment this for visualize the input images and labels for debug
-        for idx in range(img.shape[0]):
-            plt.subplot(1,2,1)
-            plt.imshow(img[idx, 0, 40, :, :].numpy())
-            plt.subplot(1,2,2)
-            plt.imshow(label[idx, 0, 40, :, :].numpy())
-
-            plt.show()
-        '''
+    for i, inputs in enumerate(trainLoader):
+        img, label = inputs[0], inputs[1]
         img = img.cuda(args.proc_idx, non_blocking=True)
-        label = label.cuda(args.proc_idx, non_blocking=True)
+        label = label.cuda(args.proc_idx, non_blocking=True).long()
+       
         step = i + epoch * len(trainLoader) # global steps
         
         optimizer.zero_grad()
@@ -219,8 +238,10 @@ def get_parser():
     parser.add_argument('--dimension', type=str, default='2d', help='2d model or 3d model')
     parser.add_argument('--pretrain', action='store_true', help='if use pretrained weight for init')
     parser.add_argument('--amp', action='store_true', help='if use the automatic mixed precision for faster training')
+    parser.add_argument('--torch_compile', action='store_true', help='use torch.compile to accelerate training, only supported by pytorch2.0')
 
     parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--resume', action='store_true', help='if resume training from checkpoint')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='the path to save checkpoint and logging info')
     parser.add_argument('--log_path', type=str, default='./log/', help='the path to save tensorboard log')
@@ -249,15 +270,17 @@ def get_parser():
 def init_network(args):
     net = get_model(args, pretrain=args.pretrain)
 
-    if args.load:
-        net.load_state_dict(torch.load(args.load))
-        logging.info(f"Model loaded from {args.load}")
-
     if args.ema:
         ema_net = get_model(args, pretrain=args.pretrain)
         logging.info("Use EMA model for evaluation")
     else:
         ema_net = None
+
+    if args.resume:
+        resume_load_model_checkpoint(net, ema_net, args)
+
+    if args.torch_compile:
+        net = torch.compile(net)
 
     return net, ema_net 
 
@@ -265,7 +288,7 @@ def init_network(args):
 
 
 
-def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
+def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None, trainset=None, testset=None):
     # seed each process
     if args.reproduce_seed is not None:
         random.seed(args.reproduce_seed)
@@ -286,7 +309,7 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         def print_pass(*args, **kwargs):
             pass
 
-        builtins.print = print_pass
+        #builtins.print = print_pass
     if args.distributed:
         if args.dist_url == "env://" and args.rank == -1:
             args.rank = int(os.environ["RANK"])
@@ -332,14 +355,14 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
         
         if args.ema:
             ema_net = nn.SyncBatchNorm.convert_sync_batchnorm(ema_net)
-            ema_net = DistributedDataParallel(ema_net, device_ids=[args.proc_idx], find_unused_parameters=False)
+            ema_net = DistributedDataParallel(ema_net, device_ids=[args.proc_idx], find_unused_parameters=True)
             
             for p in ema_net.parameters():
                 p.requires_grad_(False)
 
 
     logging.info(f"Created Model")
-    best_Dice, best_HD, best_ASD = train_net(net, args, ema_net, fold_idx=fold_idx)
+    best_Dice, best_HD, best_ASD = train_net(net, trainset, testset, args, ema_net, fold_idx=fold_idx)
     
     logging.info(f"Training and evaluation on Fold {fold_idx} is done")
     
@@ -358,12 +381,10 @@ def main_worker(proc_idx, ngpus_per_node, fold_idx, args, result_dict=None):
 
 
 if __name__ == '__main__':
-    #mp.set_start_method('fork')
-    #mp.set_sharing_strategy('file_system')
-    
     # parse the arguments
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    torch.multiprocessing.set_start_method('spawn')
     args.log_path = args.log_path + '%s/'%args.dataset
 
     if args.dist_url == "env://" and args.world_size == -1:
@@ -385,16 +406,20 @@ if __name__ == '__main__':
                 # Since we have ngpus_per_node processes per node, the total world_size
                 # needs to be adjusted accordingly
                 args.world_size = ngpus_per_node * args.world_size
+                trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+                testset = get_dataset(args, mode='test', fold_idx=fold_idx)
                 # Use torch.multiprocessing.spawn to launch distributed processes:
                 # the main_worker process function
-                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict))
+                mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, fold_idx, args, result_dict, trainset, testset))
                 best_Dice = result_dict['best_Dice']
                 best_HD = result_dict['best_HD']
                 best_ASD = result_dict['best_ASD']
             args.world_size = 1
         else:
+            trainset = get_dataset(args, mode='train', fold_idx=fold_idx)
+            testset = get_dataset(args, mode='test', fold_idx=fold_idx)
             # Simply call main_worker function
-            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args)
+            best_Dice, best_HD, best_ASD = main_worker(0, ngpus_per_node, fold_idx, args, trainset=trainset, testset=testset)
 
 
 

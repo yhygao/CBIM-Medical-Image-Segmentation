@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/acdc_3d
+data_root: /filer/tmp1/yg397/dataset/acdc/acdc_3d
 classes: 4
 modality: mri
 
@@ -15,6 +15,7 @@ epochs: 400
 training_size: [16, 192, 192] # training crop size
 start_epoch: 0
 num_workers: 2 # modify this if I/O or augmentation is slow
+aug_device: 'cpu'
 
 
 split_seed: 0

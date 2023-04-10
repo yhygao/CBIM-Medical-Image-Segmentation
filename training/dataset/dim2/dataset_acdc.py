@@ -125,7 +125,6 @@ class CMRDataset(Dataset):
         tensor_lab = self.lab_slice_list[idx]
         
 
-
         if self.mode == 'train':
             tensor_img = tensor_img.unsqueeze(0).unsqueeze(0)
             tensor_lab = tensor_lab.unsqueeze(0).unsqueeze(0)
@@ -150,6 +149,7 @@ class CMRDataset(Dataset):
             return tensor_img, tensor_lab
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
+
 
     def center_crop(self, img, label):
         D, H, W = img.shape

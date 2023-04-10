@@ -9,9 +9,7 @@ import pdb
 
 def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)):
 
-    assert round(imImage.GetSpacing()[0], 2) == round(imLabel.GetSpacing()[0], 2)
-    assert round(imImage.GetSpacing()[1], 2) == round(imLabel.GetSpacing()[1], 2)
-    assert round(imImage.GetSpacing()[2], 2) == round(imLabel.GetSpacing()[2], 2)
+    imLabel.CopyInformation(imImage)
 
     assert imImage.GetSize() == imLabel.GetSize()
 
@@ -19,7 +17,6 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
     spacing = imImage.GetSpacing()
     origin = imImage.GetOrigin()
     
-    imLabel.CopyInformation(imImage)
 
     npimg = sitk.GetArrayFromImage(imImage).astype(np.int32)
     nplab = sitk.GetArrayFromImage(imLabel).astype(np.uint8)
@@ -50,8 +47,8 @@ def ResampleImage(imImage, imLabel, save_path, name, target_spacing=(1., 1., 1.)
 if __name__ == '__main__':
 
 
-    src_path = '/research/cbim/medical/yg397/LiTS/data/'
-    tgt_path = '/research/cbim/medical/yg397/tgt_dir/'
+    src_path = '/filer/tmp1/yg397/dataset/lits/media/nas/01_Datasets/CT/LITS/'
+    tgt_path = '/filer/tmp1/yg397/dataset/lits/lits_3d/'
 
     
     name_list = []

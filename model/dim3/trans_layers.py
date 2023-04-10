@@ -57,17 +57,41 @@ class Attention(nn.Module):
 
         self.proj_drop = nn.Dropout(proj_drop)
 
+    def rearrange1(self, x, heads):
+        # rearrange is not supported by pytorch2.0 torch.compile
+        # 'b l (heads dim_head) -> b heads l dim_head'
+        b, l, n = x.shape
+        dim_head = int(n / heads)
+        x = x.view(b, l, heads, dim_head).contiguous()
+        x = x.permute(0, 2, 1, 3).contiguous()
+
+        return x
+
+    def rearrange2(self, x):
+         # 'b heads l dim_head -> b l (dim_head heads)')
+         b, heads, l, dim_head = x.shape
+         x = x.permute(0, 2, 1, 3).contiguous()
+         x = x.view(b, l, -1).contiguous()
+
+         return x
+
+
     def forward(self, x):
         # x: B, L, C.   Batch, sequence length, dim
+        # 'b l (heads dim_head) -> b heads l dim_head',
         q, k, v = self.to_qkv(x).chunk(3, dim=-1)
         
-        q, k, v = map(lambda t: rearrange(t, 'b l (heads dim_head) -> b heads l dim_head', heads=self.heads), [q, k, v])
+        #q, k, v = map(lambda t: rearrange(t, 'b l (heads dim_head) -> b heads l dim_head', heads=self.heads), [q, k, v])
+        q, k, v = map(lambda t: self.rearrange1(t, heads=self.heads), [q, k, v])
+
+
         attn = torch.einsum('bhid,bhjd->bhij', q, k) * self.scale
 
         attn = F.softmax(attn, dim=-1)
 
         attned = torch.einsum('bhij,bhjd->bhid', attn, v)
-        attned = rearrange(attned, 'b heads l dim_head -> b l (dim_head heads)')
+        #attned = rearrange(attned, 'b heads l dim_head -> b l (dim_head heads)')
+        attned = self.rearrange2(attned)
 
         attned = self.to_out(attned)
 
@@ -100,7 +124,7 @@ class LayerNorm(nn.Module):
     with shape (batch_size, channels, height, width).
     """
 
-    def __init__(self, normalized_shape, eps=1e-6, data_format="channels_first"):
+    def __init__(self, normalized_shape, eps=1e-5, data_format="channels_first"):
         super().__init__()
 
         self.weight = nn.Parameter(torch.ones(normalized_shape))

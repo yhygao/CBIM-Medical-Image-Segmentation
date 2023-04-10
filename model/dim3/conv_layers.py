@@ -37,9 +37,9 @@ class ConvNormAct(nn.Module):
             bias=bias
         )
         if preact:
-            self.norm = norm(in_ch) if norm else nn.Identity()
+            self.norm = norm(in_ch, eps=1e-4) if norm else nn.Identity()
         else:
-            self.norm = norm(out_ch) if norm else nn.Identity()
+            self.norm = norm(out_ch, eps=1e-4) if norm else nn.Identity()
         self.act = act() if act else nn.Identity()
         self.preact = preact
 

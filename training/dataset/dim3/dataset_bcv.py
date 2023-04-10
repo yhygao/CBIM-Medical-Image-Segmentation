@@ -10,6 +10,7 @@ import math
 import random
 import pdb
 from training import augmentation
+import os
 
 class BCVDataset(Dataset):
     def __init__(self, args, mode='train', k_fold=5, k=0, seed=0):
@@ -115,11 +116,11 @@ class BCVDataset(Dataset):
 
 
         if self.mode == 'train':
-            d, h, w = self.args.training_size
-            
-            # Gaussian Noise
-            tensor_img = augmentation.gaussian_noise(tensor_img, std=self.args.gaussian_noise_std)
+            if self.args.aug_device == 'gpu':
+                tensor_img = tensor_img.cuda(self.args.proc_idx)
+                tensor_lab = tensor_lab.cuda(self.args.proc_idx)
 
+            d, h, w = self.args.training_size
             
             if np.random.random() < 0.5:
 
@@ -130,6 +131,24 @@ class BCVDataset(Dataset):
             
             else:
                 tensor_img, tensor_lab = augmentation.crop_3d(tensor_img, tensor_lab, self.args.training_size, mode='random')
+            
+            tensor_img, tensor_lab = tensor_img.contiguous(), tensor_lab.contiguous()
+            
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.brightness_multiply(tensor_img, multiply_range=[0.7, 1.3])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.brightness_additive(tensor_img, std=0.1)
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gamma(tensor_img, gamma_range=[0.7, 1.5])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.contrast(tensor_img, contrast_range=[0.7, 1.3])
+            if np.random.random() < 0.2:
+                tensor_img = augmentation.gaussian_blur(tensor_img, sigma_range=[0.5, 1.0])
+            if np.random.random() < 0.2:
+                std = np.random.random() * 0.1 
+                tensor_img = augmentation.gaussian_noise(tensor_img, std=std)
+
+
 
 
         tensor_img = tensor_img.squeeze(0)
@@ -142,4 +161,3 @@ class BCVDataset(Dataset):
         else:
             return tensor_img, tensor_lab, np.array(self.spacing_list[idx])
 
-            
