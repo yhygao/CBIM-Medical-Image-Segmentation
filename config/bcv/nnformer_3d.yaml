@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/bcv_3d
+data_root: /filer/tmp1/yg397/dataset/bcv/bcv_3d 
 classes: 14
 modality: CT
 
@@ -14,7 +14,7 @@ epochs: 150
 training_size: [128, 128, 128] # training crop size
 start_epoch: 0
 num_workers: 2
-aug_device: 'gpu'
+aug_device: 'cpu'
 
 aux_loss: True
 aux_weight: [0.2,0.3,0.5]
@@ -41,7 +41,7 @@ iter_per_epoch: 300
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 50
+val_freq: 10
 
 
 

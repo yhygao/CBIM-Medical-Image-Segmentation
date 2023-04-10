@@ -1,5 +1,5 @@
 #DATA
-data_root: dataset/bcv_3d
+data_root: /filer/tmp1/yg397/dataset/bcv/bcv_3d
 classes: 14
 modality: CT
 
@@ -15,7 +15,7 @@ epochs: 300
 training_size: [96, 96, 96] # training crop size
 start_epoch: 0
 num_workers: 2
-aug_device: 'gpu'
+aug_device: 'cpu'
 
 split_seed: 0
 k_fold: 5
