@@ -352,8 +352,3 @@ if __name__ == '__main__':
         print(img_name, 'done')
 
 
-    
-
-
-
-
