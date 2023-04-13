@@ -137,15 +137,15 @@ def train_net(net, trainset, testset, args, ema_net=None, fold_idx=0):
                     best_HD = HD_list_test
                     best_ASD = ASD_list_test
 
-                # Save the checkpoint with best performance
-                net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
+                    # Save the checkpoint with best performance
+                    net_state_dict, ema_net_state_dict = unwrap_model_checkpoint(net, ema_net, args)
 
-                torch.save({
-                    'epoch': epoch+1,
-                    'model_state_dict': net_state_dict,
-                    'ema_model_state_dict': ema_net_state_dict,
-                    'optimizer_state_dict': optimizer.state_dict(),
-                }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
+                    torch.save({
+                        'epoch': epoch+1,
+                        'model_state_dict': net_state_dict,
+                        'ema_model_state_dict': ema_net_state_dict,
+                        'optimizer_state_dict': optimizer.state_dict(),
+                    }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_{fold_idx}_best.pth")
 
                 logging.info("Evaluation Done")
                 logging.info(f"Dice: {dice_list_test.mean():.4f}/Best Dice: {best_Dice.mean():.4f}")
