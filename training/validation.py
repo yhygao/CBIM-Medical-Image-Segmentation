@@ -173,7 +173,11 @@ def validation_ddp(net, dataloader, args):
     # Due to the DistributedSampler pad samples to make data evenly distributed to all gpus,
     # we need to remove the padded samples for correct evaluation.
     if args.distributed:
-        padding_size = dist.get_world_size() - (len(dataloader.dataset) % dist.get_world_size())
+        world_size = dist.get_world_size()
+        dataset_len = len(dataloader.dataset)
+
+        padding_size = 0 if (dataset_len % world_size) == 0 else world_size - (dataset_len % world_size)
+        
         for _ in range(padding_size):
             ASD_list.pop()
             HD_list.pop()
