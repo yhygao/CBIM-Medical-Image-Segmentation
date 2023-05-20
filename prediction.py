@@ -167,7 +167,7 @@ def preprocess(itk_img, target_spacing, args):
     #np_img -= 100.93
     #np_img /= 76.90
     max98 = np.percentile(np_img, 98)
-    np_img = np.clip(np_img, 0, 98)
+    np_img = np.clip(np_img, 0, max98)
     np_img = np_img / max98
 
     np_img, original_idx = pad_to_training_size(np_img, args)
