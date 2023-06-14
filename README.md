@@ -6,6 +6,7 @@ evaluate deep learning models. It provides fair evaluation and comparison of CNN
 ### News
 Detail updates can be found in docs/change.md
 
+- Our new work, Hermes, has been released on arXiv: [Training Like a Medical Resident: Universal Medical Image Segmentation via Context Prior Learning](https://arxiv.org/pdf/2306.02416.pdf). Inspired by the training of medical residents, we explore universal medical image segmentation, whose goal is to learn from diverse medical imaging sources covering a range of clinical targets, body regions, and image modalities. Following this paradigm, we propose Hermes, a context prior learning approach that addresses the challenges related to the heterogeneity on data, modality, and annotations in the proposed universal paradigm. Code will be released at https://github.com/yhygao/universal-medical-image-segmentation.
 - **Support PyTorch 2.0 (April 10, 2023). Detail tutorial is comming soon.**
 - **Support using GPU to conduct data augmentation for faster training**
 - **We update a revised version of [MedFormer](https://arxiv.org/abs/2203.00131) paper, including more experiments and analysis. (April 5, 2023)** 
